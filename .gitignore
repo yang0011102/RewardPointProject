@@ -1,0 +1,7 @@
+# dependencies
+/_pycache_/
+/config
+/venv
+/tool
+__pycache__/
+.idea/
