@@ -2,11 +2,16 @@
 import os
 
 from Interface import RewardPointInterface
+
 from config.dbconfig import *
 from pre_check import *
 from tool.tool import *
 
+from InterfaceModules.activity import UploadInterface
+
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+
+uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
 
 def dispatcher(selector, data, files=None):
@@ -119,6 +124,12 @@ def dispatcher(selector, data, files=None):
             else:
                 _response = {"code": 108,
                              "msg": "未能执行删除", }
+    elif selector == "upload":
+        print("upload")
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": uploadWorker.editorData(data_in=data, img=files, ),
+                     }
     else:
         _response = {"code": 9999,
                      "msg": "无效的接口",

@@ -57,18 +57,11 @@ def _download(filename):
 
 @app.route('/Interface/<selector>', methods=['POST'])
 def _inferface(selector):
-    print("selector = ", selector)
     data = request.form.to_dict()
     if data == {}:
         data = json.loads(request.get_data(as_text=True))
-    print("data:", data)
     file = request.files.get('file')
-    if file:
-        print("Got a file: ", file)
-    else:
-        print("file is:", file)
     _response = json.dumps(dispatcher(selector=selector, data=data, files=file), cls=MyEncoder)
-    print("返回体：", _response)
     return _response
 
 
