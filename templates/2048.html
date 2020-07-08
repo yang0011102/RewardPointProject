@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>2048game</title>
+    <meta name="keywords" content="2048game">
+    <link href="./2048game/css/main.css" rel="stylesheet" type="text/css">
+    <meta name="viewport"
+          content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0, maximum-scale=1, user-scalable=no, minimal-ui">
+    <script type="text/javascript" async="" charset="utf-8" src="./2048game/php/core.php"></script>
+    <script type="text/javascript" async="" charset="utf-8" src="./2048game/php/core(1).php"></script>
+    <script>
+        lastScrollY = 0;
+
+        function heartBeat() {
+            var diffY;
+            if (document.documentElement && document.documentElement.scrollTop)
+                diffY = document.documentElement.scrollTop;
+            else if (document.body)
+                diffY = document.body.scrollTop
+            else {/*Netscape stuff*/
+            }
+            percent = .1 * (diffY - lastScrollY);
+            if (percent > 0) percent = Math.ceil(percent);
+            else percent = Math.floor(percent);
+            document.getElementById("full").style.top = parseInt(document.getElementById("full").style.top) + percent + "px";
+            lastScrollY = lastScrollY + percent;
+        }
+
+        {#suspendcode="<div id=\"full\" style='right:15px;POSITION:absolute;TOP:150px;z-index:100'><a href='tel:15050532024'> </a><br></div>"<!--此处修改右侧联系电话-->#}
+        {#document.write(suspendcode);#}
+        window.setInterval("heartBeat()", 1);
+    </script>
+</head>
+<body>
+<div id="full" style="right:15px;POSITION:absolute;TOP:150px;z-index:100"><br></div>
+
+<div class="container">
+    <div class="heading">
+        <h1 class="title">2048</h1>
+        <div class="scores-container">
+            <div class="score-container">0</div>
+            <div class="best-container">0</div>
+        </div>
+    </div>
+    <div class="above-game">
+        <p class="game-intro">&nbsp;</p><!--此处可改成你们自己的链接-->
+        <a class="restart-button">点我开始</a>
+    </div>
+    <div class="game-container">
+        <div class="game-message">
+            <p></p>
+            <div class="lower">
+                <a class="keep-playing-button">Keep going</a>
+                <a class="retry-button">再玩一次</a>
+            </div>
+        </div>
+        <div class="grid-container">
+            <div class="grid-row">
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+            </div>
+            <div class="grid-row">
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+            </div>
+            <div class="grid-row">
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+            </div>
+            <div class="grid-row">
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+                <div class="grid-cell"></div>
+            </div>
+        </div>
+        <div class="tile-container">
+            <div class="tile tile-2 tile-position-1-4 tile-new">
+                <div class="tile-inner">2</div>
+            </div>
+            <div class="tile tile-4 tile-position-4-1 tile-new">
+                <div class="tile-inner">4</div>
+            </div>
+        </div>
+    </div>
+    <hr>
+</div>
+<script src="./2048game/js/bind_polyfill.js"></script>
+<script src="./2048game/js/classlist_polyfill.js"></script>
+<script src="./2048game/js/animframe_polyfill.js"></script>
+<script src="./2048game/js/keyboard_input_manager.js"></script>
+<script src="./2048game/js/html_actuator.js"></script>
+<script src="./2048game/js/grid.js"></script>
+<script src="./2048game/js/tile.js"></script>
+<script src="./2048game/js/local_storage_manager.js"></script>
+<script src="./2048game/js/game_manager.js"></script>
+<script src="./2048game/js/application.js"></script>
+</body>
+</html>
