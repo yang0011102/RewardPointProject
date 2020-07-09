@@ -7,11 +7,12 @@ from config.dbconfig import *
 from pre_check import *
 from tool.tool import *
 
-from InterfaceModules.activity import UploadInterface
+from InterfaceModules.upload import UploadInterface
+from InterfaceModules.activity import ActivityInterface
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
 
 def dispatcher(selector, data, files=None):
@@ -130,10 +131,66 @@ def dispatcher(selector, data, files=None):
                      "msg": "",
                      "data": uploadWorker.editorData(data_in=data, img=files, ),
                      }
-    else:
-        _response = {"code": 9999,
-                     "msg": "无效的接口",
+    elif selector == "add_activity":
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_activity,
+                                                                    'check_exist': pre_activity_required})
+        if flag:
+            flag = activityWorker.addActivity(data_in=data)
+            if flag:
+                _response = {"code": 106, "msg": "缺少参数"}
+            else:
+                _response = {"code": 0, "msg": ""}
+
+    elif selector == "query_activity":
+        print("getActivity")
+
+        totalLength, res_df = activityWorker.getActivity(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": {"totalLength": totalLength,
+                              "detail": df_tolist(res_df), }
                      }
+    elif selector == "get_activity_info":
+        print("get_activity_info")
+
+        info = activityWorker.getActivityById(data_in=data)
+        detail = df_tolist(info)
+        print(detail)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": detail[0]
+                     }
+    elif selector == "edit_activity":
+        print("edit_activity")
+        res = activityWorker.editActivityById(data_in=data)
+        if res:
+
+            _response = {"code": 0,
+                         "msg": ""
+            }
+
+        else:
+            _response = {
+                "code": -1,
+                "msg": "修改失败"
+            }
+    elif selector == "delete_activity":
+        res = activityWorker.deleteActivityById(data_in=data)
+        if res:
+
+            _response = {"code": 0,
+                         "msg": ""
+                         }
+
+        else:
+            _response = {
+                "code": -1,
+                "msg": "修改失败"
+            }
+    else:
+        _response = {"code":9999,
+                     "msg":"无效的接口"
+        }
     return _response
 
 

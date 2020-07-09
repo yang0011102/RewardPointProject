@@ -47,3 +47,16 @@ check_import_goods = ["Operator"]  # 必填
 # 下架商品
 pre_offShelf_goods = {"GoodsCode": int}
 check_offShelf_goods = ["GoodsCode"]  # 必填
+
+# 新增活动
+pre_activity = {
+    "Title": str,
+    "Slogan": str,
+    "PictureUrl": str,
+    "BeginDateTime": str,
+    "EndDateTime": str,
+    "ActivityContent": str,
+    "RewardAndPenalties": str,
+    "CreatedBy": str
+}
+pre_activity_required = ["Title", "PictureUrl", "BeginDateTime", "EndDateTime", "ActivityContent", "CreatedBy"]
