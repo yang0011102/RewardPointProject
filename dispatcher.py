@@ -9,10 +9,14 @@ from tool.tool import *
 
 from InterfaceModules.upload import UploadInterface
 from InterfaceModules.activity import ActivityInterface
+from InterfaceModules.shoppingCart import ShoppingCartInterface
+from InterfaceModules.order import OrderInterface
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
 
 def dispatcher(selector, data, files=None):
@@ -187,6 +191,47 @@ def dispatcher(selector, data, files=None):
                 "code": -1,
                 "msg": "修改失败"
             }
+
+    elif selector == "add_cart":
+        _response = shoppingCartWorker.addCart(data_in=data)
+
+    elif selector == "query_cart":
+        res = shoppingCartWorker.getCartList(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": df_tolist(res)
+                     }
+
+    elif selector == "edit_cart_num":
+        # 判断是否超过库存，若超过，返回错误信息
+        isOverStock = shoppingCartWorker.isOverStock(data_in=data)
+
+        if isOverStock:
+            _response = {
+                "code": -1,
+                "msg": "库存不足"
+            }
+        else:
+            # 若没有超过，修改数量
+            res = shoppingCartWorker.changeCartNum(editNum=data.get("num"), ShoppingCartID=data.get("ShoppingCartID"))
+            if res:
+                _response = {
+                    "code": 0,
+                    "msg": ""
+                }
+            else:
+                _response = {
+                    "code": -1,
+                    "msg": "修改购物车数量失败"
+                }
+
+    elif selector == "create_order":
+        res = orderWorker.createOrder(data_in=data)
+
+        if res:
+            _response = {"code": 0,
+                         "msg": ""
+                         }
     else:
         _response = {"code":9999,
                      "msg":"无效的接口"
