@@ -119,7 +119,7 @@ def dispatcher(selector, data, files=None):
         flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_offShelf_goods,
                                                                     'check_exist': check_offShelf_goods})
         if flag:
-            if worker.delete_rewardPoint(data_in=data):
+            if worker.offShelf_goods(data_in=data):
                 _response = {"code": 0,
                              "msg": "", }
             else:
@@ -206,11 +206,9 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
             continue
         if k not in list(checker.get('check_type').keys()):
             _response = {"code": 1, "msg": f"请不要传送无关参数。key:{k},value:{v}"}
-            print(_response)
             return False, _response
         if not isinstance(v, checker.get('check_type').get(k)):
             _response = {"code": 2, "msg": f"错误参数类型。key:{k},value:{v}，请传送{checker.get('check_type').get(k)}类型"}
-            print(_response)
             return False, _response
     # 检查必填项 check_exist
     print("检查必填项")
@@ -218,32 +216,30 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
         if _exist not in list(data.keys()):
             _response = {"code": 3,
                          "msg": f"缺少必填参数。key:{_exist}，请传送{checker.get('check_type').get(_exist)}类型\n data:{data}"}
-            print(_response)
             return False, _response
     # 输入文件 check_filetype,table_column
     print("检查输入文件")
     if file is not None:
-        print(file.filename, file)
         filename, filetype = os.path.splitext(file.filename)
-        print("filename:", filename, "filetype:", filetype)
         print(f"检查输入文件类型:{mustFile.get('check_filetype')}")
         if not filetype in mustFile.get('check_filetype'):
             _response = {"code": 4, "msg": f"错误文件类型。key:{file.filename}，请传送{mustFile.get('check_filetype')}类型"}
-            print(_response)
             return False, _response
         print("建立临时表")
         temp_df = pd.read_excel(file.stream)
         if temp_df.empty:
             _response = {"code": 5,
                          "msg": f"请勿传送空表"}
-            print(_response)
             return False, _response
         print("检查输入文件内容列")
         for i in mustFile.get('table_column'):
-            if i not in temp_df:
+            if i not in temp_df.columns.tolist():
                 _response = {"code": 6,
                              "msg": f"缺少列：{i}，请传送{mustFile.get('table_column')}"}
-                print(_response)
+                return False, _response
+            if temp_df[i].isnull().any:
+                _response = {"code": 7,
+                             "msg": f"请勿传送空列：{i}"}
                 return False, _response
 
         if mustFile.get('table_dateType'):
@@ -263,10 +259,9 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
                             _file_dateType_flag = False
                             break
                     if _file_dateType_flag:
-                        _response = {"code": 7,
+                        _response = {"code": 8,
                                      "msg": f"文件中时间类型错误：row:{_index},column:{i}，请传送{mustFile.get('table_dateType').get('dateType')}"}
-                        print(_response)
-                        return _response
+                        return False, _response
 
     # 检查参数时间格式 check_dateType
     if checker.get("check_dateType"):
@@ -274,8 +269,7 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
         for i in checker.get("check_dateType"):
             if data.get(i):
                 if not isVaildDate(data.get(i)):
-                    _response = {"code": 8, "msg": f"错误时间类型,key:{i},value:{data.get(i)}，请传送%Y-%m-%d %H:%M:%S类型"}
-                    print(_response)
+                    _response = {"code": 9, "msg": f"错误时间类型,key:{i},value:{data.get(i)}，请传送%Y-%m-%d %H:%M:%S类型"}
                     return False, _response
     print("检查通过")
     return True, _response

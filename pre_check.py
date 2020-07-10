@@ -45,7 +45,7 @@ import_goods_columncheck = ['商品编码', '商品名称', '商品单价', '商
 check_import_goods = ["Operator"]  # 必填
 
 # 下架商品
-pre_offShelf_goods = {"GoodsCode": int}
+pre_offShelf_goods = {"GoodsCode": str}
 check_offShelf_goods = ["GoodsCode"]  # 必填
 
 # 新增活动
