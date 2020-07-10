@@ -1,25 +1,10 @@
 import logging
 
-import numpy as np
 from flask import Flask, render_template, request, jsonify, Response, send_from_directory
 
 from config.config import *
 from dispatcher import dispatcher
 from tool.tool import *
-
-
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, pd.Timestamp):
-            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
-        else:
-            return super(MyEncoder, self).default(obj)
 
 
 class MyResponse(Response):
@@ -36,7 +21,7 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xlsx', 'xls'}
 app.config['APPLICATION_ROOT'] = APPLICATION_ROOT
 app.response_class = MyResponse
-logging.basicConfig(filename=f"./log/web.txt", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=f"./log/web.{time.strftime('%Y_%m_%d')}.txt", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 @app.route('/')
