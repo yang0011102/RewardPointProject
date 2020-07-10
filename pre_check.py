@@ -48,6 +48,10 @@ check_import_goods = ["Operator"]  # 必填
 pre_offShelf_goods = {"GoodsCode": str}
 check_offShelf_goods = ["GoodsCode"]  # 必填
 
+# 上传商品图片
+pre_upload_goodsImage={"GoodsCode": str,'Operator':int}
+check_upload_goodsImage = ["GoodsCode","Operator"]  # 必填
+imagetype_upload_goodsImage = ['png', 'jpg', 'jpeg', 'gif']  # 图片类型检查项
 # 新增活动
 pre_activity = {
     "Title": str,

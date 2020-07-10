@@ -2,13 +2,11 @@
 import os
 
 from Interface import RewardPointInterface
-
+from InterfaceModules.activity import ActivityInterface
+from InterfaceModules.upload import UploadInterface
 from config.dbconfig import *
 from pre_check import *
 from tool.tool import *
-
-from InterfaceModules.upload import UploadInterface
-from InterfaceModules.activity import ActivityInterface
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
@@ -140,7 +138,6 @@ def dispatcher(selector, data, files=None):
                 _response = {"code": 106, "msg": "缺少参数"}
             else:
                 _response = {"code": 0, "msg": ""}
-
     elif selector == "query_activity":
         print("getActivity")
 
@@ -187,10 +184,18 @@ def dispatcher(selector, data, files=None):
                 "code": -1,
                 "msg": "修改失败"
             }
+    elif selector == "upload_goodsImage":
+        pure_data = data.copy()
+        pure_data.pop("GoodsCode", '404')
+        _response = dispatcher(selector="upload", data=pure_data, files=files)  # 调用图片上传
+        if not worker.upload_goodsImage(data_in=data, image_url=_response.get("data")):
+            _response = {"code": 103,
+                         "msg": "未知原因",
+                         }
     else:
-        _response = {"code":9999,
-                     "msg":"无效的接口"
-        }
+        _response = {"code": 9999,
+                     "msg": "无效的接口"
+                     }
     return _response
 
 
@@ -225,43 +230,43 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
         if not filetype in mustFile.get('check_filetype'):
             _response = {"code": 4, "msg": f"错误文件类型。key:{file.filename}，请传送{mustFile.get('check_filetype')}类型"}
             return False, _response
-        print("建立临时表")
-        temp_df = pd.read_excel(file.stream)
-        if temp_df.empty:
-            _response = {"code": 5,
-                         "msg": f"请勿传送空表"}
-            return False, _response
-        print("检查输入文件内容列")
-        for i in mustFile.get('table_column'):
-            if i not in temp_df.columns.tolist():
-                _response = {"code": 6,
-                             "msg": f"缺少列：{i}，请传送{mustFile.get('table_column')}"}
+        if filetype in ('.xlsx', '.xls'):
+            print("建立临时表")
+            temp_df = pd.read_excel(file.stream)
+            if temp_df.empty:
+                _response = {"code": 5,
+                             "msg": f"请勿传送空表"}
                 return False, _response
-            if temp_df[i].isnull().any:
-                _response = {"code": 7,
-                             "msg": f"请勿传送空列：{i}"}
-                return False, _response
-
-        if mustFile.get('table_dateType'):
-            for i in mustFile.get('table_dateType').get('date_column'):
-                print(temp_df[i].index.tolist())
-                for _index in temp_df[i].index.tolist():
-                    d_v = temp_df[i][_index]
-                    print("正在检查列:", i, "行:", _index, "值:", d_v)
-                    if isinstance(d_v, pd.Timestamp):
-                        print(d_v, "为pd.Timestamp类型")
-                        break
-                    print("正在检查行", _index, "内容:", d_v)
-                    _file_dateType_flag = True
-                    for j in mustFile.get('table_dateType').get('dateType'):
-                        print("正在检查时间类型", j)
-                        if isVaildDate(date=d_v, timeType=j):
-                            _file_dateType_flag = False
+            print("检查输入文件内容列")
+            for i in mustFile.get('table_column'):
+                if i not in temp_df.columns.tolist():
+                    _response = {"code": 6,
+                                 "msg": f"缺少列：{i}，请传送{mustFile.get('table_column')}"}
+                    return False, _response
+                if temp_df[i].isnull().any:
+                    _response = {"code": 7,
+                                 "msg": f"请勿传送空列：{i}"}
+                    return False, _response
+            if mustFile.get('table_dateType'):
+                for i in mustFile.get('table_dateType').get('date_column'):
+                    print(temp_df[i].index.tolist())
+                    for _index in temp_df[i].index.tolist():
+                        d_v = temp_df[i][_index]
+                        print("正在检查列:", i, "行:", _index, "值:", d_v)
+                        if isinstance(d_v, pd.Timestamp):
+                            print(d_v, "为pd.Timestamp类型")
                             break
-                    if _file_dateType_flag:
-                        _response = {"code": 8,
-                                     "msg": f"文件中时间类型错误：row:{_index},column:{i}，请传送{mustFile.get('table_dateType').get('dateType')}"}
-                        return False, _response
+                        print("正在检查行", _index, "内容:", d_v)
+                        _file_dateType_flag = True
+                        for j in mustFile.get('table_dateType').get('dateType'):
+                            print("正在检查时间类型", j)
+                            if isVaildDate(date=d_v, timeType=j):
+                                _file_dateType_flag = False
+                                break
+                        if _file_dateType_flag:
+                            _response = {"code": 8,
+                                         "msg": f"文件中时间类型错误：row:{_index},column:{i}，请传送{mustFile.get('table_dateType').get('dateType')}"}
+                            return False, _response
 
     # 检查参数时间格式 check_dateType
     if checker.get("check_dateType"):

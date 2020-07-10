@@ -47,7 +47,6 @@ class RewardPointInterface:
         self.db_nc = cx_Oracle.connect(
             f'{ncDbInfo["user"]}/{ncDbInfo["password"]}@{ncDbInfo["host"]}:{ncDbInfo["port"]}/{ncDbInfo["db"]}',
             encoding="UTF-8", nencoding="UTF-8")
-
         self.rewardPointChildType = getChlidType(dbcon=self.db_mssql)
         self.rewardPointStandard = pd.read_sql(sql='''SELECT TOP (1000) [RewardPointsStandardID],[RewardPointsTypeID]
               ,[CheckItem],[PointsAmount],[ChangeCycle] FROM [RewardPointDB].[dbo].[RewardPointsStandard]''',
@@ -241,7 +240,7 @@ class RewardPointInterface:
             # 填充
             summary_df = summary_df.append(man_data, ignore_index=True)
 
-    def query_rewardPoint(self, data_in: dict):
+    def query_rewardPoint(self, data_in: dict) -> (int, pd.DataFrame):
         '''
         返回积分详情查询信息
         :param data_in:
@@ -249,7 +248,7 @@ class RewardPointInterface:
         '''
         return self._base_query_rewardPointDetail(data_in=data_in)
 
-    def delete_rewardPoint(self, data_in: dict):
+    def delete_rewardPoint(self, data_in: dict)-> bool:
         print("进入删除", data_in)
         base_sql = "update [RewardPointDB].[dbo].[RewardPointsDetail] set DataStatus=1 where RewardPointsdetailID = {}"
         sql = base_sql.format(data_in.get("RewardPointsdetailID"))
@@ -261,7 +260,7 @@ class RewardPointInterface:
         print("提交操作")
         return True
 
-    def export_rewardPoint(self, data_in: dict):
+    def export_rewardPoint(self, data_in: dict)-> str:
         '''
         包装积分详情信息，生成EXCEL并返回下载链接
         :param data_in:
@@ -276,7 +275,7 @@ class RewardPointInterface:
         print('保存到', filepath)
         return "http://192.168.40.229:8080/download/" + filename  # 传回相对路径
 
-    def import_rewardPoint(self, data_in: dict, file_df: pd.DataFrame):
+    def import_rewardPoint(self, data_in: dict, file_df: pd.DataFrame)-> bool:
         rewardPointType_df = pd.read_sql(
             "select RewardPointsTypeID,Name from RewardPointDB.dbo.RewardPointsType where DataStatus=0",
             con=self.db_mssql)
@@ -330,7 +329,7 @@ class RewardPointInterface:
         print("sql提交完毕")
         return True
 
-    def account_rewardPoint(self, data_in: dict):
+    def account_rewardPoint(self, data_in: dict)-> bool:
         print("进入结算")
         base_sql = "update [RewardPointDB].[dbo].[RewardPointsDetail] set IsAccounted=1 where {} in "
         cur = self.db_mssql.cursor()
@@ -350,7 +349,7 @@ class RewardPointInterface:
             err_flag = True
         return err_flag
 
-    def query_goods(self, data_in: dict):
+    def query_goods(self, data_in: dict) -> (int, pd.DataFrame):
         if data_in:  # 不为空则按照条件查询
             query_item = ["DataStatus=0"]  # 查询条件
             # 商品名称
@@ -395,7 +394,7 @@ class RewardPointInterface:
 
         return totalLength, res_df
 
-    def import_goods(self, data_in: dict, file_df: pd.DataFrame):
+    def import_goods(self, data_in: dict, file_df: pd.DataFrame) -> bool:
         cur = self.db_mssql.cursor()
         # 先检查GoodsCode存不存在,不存在就新建一个
         all_goodsCode = pd.read_sql(sql="select GoodsCode from Goods where DataStatus=0", con=self.db_mssql)[
@@ -428,8 +427,9 @@ class RewardPointInterface:
         cur.execute(insert_sql)
         # 提交
         self.db_mssql.commit()
+        return True
 
-    def offShelf_goods(self, data_in: dict):
+    def offShelf_goods(self, data_in: dict) -> bool:
         sql = f"update [RewardPointDB].[dbo].[Goods] set Status=1 where GoodsCode in ({data_in.get('GoodsCode')})"
         cur = self.db_mssql.cursor()
         cur.execute(sql)
@@ -442,3 +442,13 @@ class RewardPointInterface:
 
     def append_goods(self, data_in: dict):
         pass
+
+    def upload_goodsImage(self, data_in: dict, image_url: str) -> bool:
+        cur = self.db_mssql.cursor()
+        base_sql = "update RewardPointDB.dbo.Goods set PictureUrl={}"
+        query_item = []
+        query_item.append(f"GoodsCode = {data_in.get('GoodsCode')}")
+        sql = base_sql.format("\'" + image_url + "\'") + " where " + ' and '.join(query_item)
+        cur.execute(sql)
+        self.db_mssql.commit()
+        return True
