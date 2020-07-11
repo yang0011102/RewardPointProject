@@ -90,7 +90,7 @@ def dispatcher(selector, data, files=None):
                                                                     },
                                     mustFile={'check_filetype': filetype_import_goods,
                                               'table_column': import_goods_columncheck,
-                                              'table_dateType': file_dateType_import_goods,
+                                              # 'table_dateType': file_dateType_import_goods,
                                               })
         if not flag:
             return _response
@@ -113,11 +113,20 @@ def dispatcher(selector, data, files=None):
                          "msg": "",
                          "data": {"total": totalLength, "detail": res_df.to_json(orient='records', force_ascii=False)}
                          }
-    elif selector == "offShelf_goods":
+    elif selector == "export_goods":
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_export_goods,
+                                                                    'check_exist': check_export_goods},
+                                    )
+        if flag:
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": worker.export_goods(data_in=data),
+                         }
+    elif selector == "set_goods_status":
         flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_offShelf_goods,
                                                                     'check_exist': check_offShelf_goods})
         if flag:
-            if worker.offShelf_goods(data_in=data):
+            if worker.set_goods_status(data_in=data):
                 _response = {"code": 0,
                              "msg": "", }
             else:

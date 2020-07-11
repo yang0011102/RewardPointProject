@@ -5,39 +5,7 @@
 import cx_Oracle
 import pymssql
 
-from config.config import DOWNLOAD_FOLDER
 from tool.tool import *
-
-
-def getChlidType(dbcon) -> dict:
-    '''
-    返回所有积分类型的所有子类型
-    :param dbcon: MSSQL连接器
-    :return:
-    '''
-    rewardPointsType_df = pd.read_sql(
-        'select RewardPointsTypeID,ParentID,ChildrenID,RewardPointsTypeCode,Name from RewardPointsType where DataStatus=0',
-        dbcon)
-    res = {}
-    for _name in rewardPointsType_df['Name'].tolist():
-        _rewardPointsType_container = []
-        # 遍历多叉
-        childID = rewardPointsType_df.loc[
-            rewardPointsType_df['Name'] == _name, 'ChildrenID'].tolist()
-        while True:
-            while None in childID:  # 删除空
-                childID.remove(None)
-            if len(childID) != 0:
-                childID_list = childID[0].split(',')
-                childName = rewardPointsType_df.loc[
-                    rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'Name'].values
-                childID = rewardPointsType_df.loc[
-                    rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'ChildrenID'].tolist()
-                _rewardPointsType_container.extend(childName)
-            else:
-                break
-        res[_name] = _rewardPointsType_container
-    return res
 
 
 class RewardPointInterface:
@@ -248,7 +216,7 @@ class RewardPointInterface:
         '''
         return self._base_query_rewardPointDetail(data_in=data_in)
 
-    def delete_rewardPoint(self, data_in: dict)-> bool:
+    def delete_rewardPoint(self, data_in: dict) -> bool:
         print("进入删除", data_in)
         base_sql = "update [RewardPointDB].[dbo].[RewardPointsDetail] set DataStatus=1 where RewardPointsdetailID = {}"
         sql = base_sql.format(data_in.get("RewardPointsdetailID"))
@@ -260,22 +228,16 @@ class RewardPointInterface:
         print("提交操作")
         return True
 
-    def export_rewardPoint(self, data_in: dict)-> str:
+    def export_rewardPoint(self, data_in: dict) -> str:
         '''
         包装积分详情信息，生成EXCEL并返回下载链接
         :param data_in:
         :return:
         '''
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
-        filename = str(data_in.get("Operator")) + str(time.time()) + ".xlsx"
-        print('文件名', filename)
-        filepath = DOWNLOAD_FOLDER + '/' + filename
-        print('文件路径', filepath)
-        res_df.to_excel(filepath, index=False)
-        print('保存到', filepath)
-        return "http://192.168.40.229:8080/download/" + filename  # 传回相对路径
+        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
 
-    def import_rewardPoint(self, data_in: dict, file_df: pd.DataFrame)-> bool:
+    def import_rewardPoint(self, data_in: dict, file_df: pd.DataFrame) -> bool:
         rewardPointType_df = pd.read_sql(
             "select RewardPointsTypeID,Name from RewardPointDB.dbo.RewardPointsType where DataStatus=0",
             con=self.db_mssql)
@@ -329,7 +291,7 @@ class RewardPointInterface:
         print("sql提交完毕")
         return True
 
-    def account_rewardPoint(self, data_in: dict)-> bool:
+    def account_rewardPoint(self, data_in: dict) -> bool:
         print("进入结算")
         base_sql = "update [RewardPointDB].[dbo].[RewardPointsDetail] set IsAccounted=1 where {} in "
         cur = self.db_mssql.cursor()
@@ -349,27 +311,74 @@ class RewardPointInterface:
             err_flag = True
         return err_flag
 
-    def query_goods(self, data_in: dict) -> (int, pd.DataFrame):
+    def _base_query_goods(self, data_in: dict) -> (int, pd.DataFrame):
         if data_in:  # 不为空则按照条件查询
             query_item = ["DataStatus=0"]  # 查询条件
             # 商品名称
             if data_in.get("Name"):
                 goodName = "\'" + data_in.get('Name') + "\'"
-                query_item.append(f"Name = {goodName}")
+                query_item.append(f"goods.Name = {goodName}")
             # 商品编码
             if data_in.get("GoodsCode"):
-                query_item.append(f"GoodsCode in {data_in.get('GoodsCode')}")
+                query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
-                base_sql = "select * from [RewardPointDB].[dbo].[Goods]"
+                base_sql = '''
+                select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
+                InOutTable.出库总量,InOutTable.入库总量,LockTable.锁定总量
+                from dbo.Goods goods
+                join (
+                    select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,
+                    goods.Status,InOutTable.出库总量,InOutTable.入库总量,LockTable.锁定总量
+                    from dbo.Goods goods
+                    left join (
+                            select
+                            goods.GoodsID,sum(stkin.ChangeAmount) as 入库总量, sum(stkout.ChangeAmount) as 出库总量
+                            from dbo.Goods goods
+                            left join (select ChangeAmount,GoodsID from dbo.StockInDetail where DataStatus=0 and ChangeType=0) stkin on stkin.GoodsID = goods.GoodsID
+                            left join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
+                            where 
+                            goods.DataStatus=0
+                            group by goods.GoodsID
+                            ) as InOutTable on InOutTable.GoodsID = goods.GoodsID
+                    left join (
+                            select
+                            goods.GoodsID,sum(stkout.ChangeAmount) as 锁定总量
+                            from dbo.Goods goods
+                            join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
+                            where 
+                            goods.DataStatus=0
+                            group by goods.GoodsID) as LockTable on LockTable.GoodsID = goods.GoodsID  
+                            where {0[0]}'''
                 sql_item = [query_sql]
             else:
-                base_sql = "select top {0[0]} * " \
-                           "from (select row_number() over(order by GoodsID asc) as rownumber ,* " \
-                           "from [RewardPointDB].[dbo].[Goods] {0[1]} " \
-                           ") temp_row " \
-                           "where rownumber > {0[2]}*({0[3]}-1)"
+                base_sql = '''
+                select top {0[0]} * from (
+                    select row_number() over(order by goods.GoodsID asc) as rownumber, goods.GoodsCode,
+                    goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,InOutTable.出库总量,InOutTable.入库总量,LockTable.锁定总量
+                    from dbo.Goods goods
+                    left join (
+                            select
+                            goods.GoodsID,sum(stkin.ChangeAmount) as 入库总量, sum(stkout.ChangeAmount) as 出库总量
+                            from dbo.Goods goods
+                            left join (select ChangeAmount,GoodsID from dbo.StockInDetail where DataStatus=0 and ChangeType=0) stkin on stkin.GoodsID = goods.GoodsID
+                            left join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
+                            where 
+                            goods.DataStatus=0
+                            group by goods.GoodsID
+                            ) as InOutTable on InOutTable.GoodsID = goods.GoodsID
+                    left join (
+                            select
+                            goods.GoodsID,sum(stkout.ChangeAmount) as 锁定总量
+                            from dbo.Goods goods
+                            join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
+                            where 
+                            goods.DataStatus=0
+                            group by goods.GoodsID
+                            ) as LockTable on LockTable.GoodsID = goods.GoodsID {0[1]}
+                ) temp_row where rownumber > {0[2]}*({0[3]}-1)
+                '''
                 sql_item = [data_in.get("pageSize"), query_sql, data_in.get("pageSize"), data_in.get("page")]
             # 拼起来
             sql = base_sql.format(sql_item)
@@ -394,18 +403,27 @@ class RewardPointInterface:
 
         return totalLength, res_df
 
+    def query_goods(self, data_in: dict) -> (int, pd.DataFrame):
+        return self._base_query_goods(data_in=data_in)
+
+    def export_goods(self, data_in: dict) -> str:
+        _, res_df = self._base_query_goods(data_in=data_in)
+        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
+
     def import_goods(self, data_in: dict, file_df: pd.DataFrame) -> bool:
         cur = self.db_mssql.cursor()
         # 先检查GoodsCode存不存在,不存在就新建一个
         all_goodsCode = pd.read_sql(sql="select GoodsCode from Goods where DataStatus=0", con=self.db_mssql)[
             'GoodsCode'].tolist()
         insert_item = []
-        base_insert_sql = "insert into RewardPointDB.dbo.Goods(GoodsCode,Name,Price,CreatedBy) values "
+        base_insert_sql = "insert into RewardPointDB.dbo.Goods(GoodsCode,Name,PointCost,MarketPrice,PurchasePrice,CreatedBy) values "
         exist_goodsCode = file_df['商品编码'].drop_duplicates().tolist()
         for _code in exist_goodsCode:
             if _code not in all_goodsCode:
-                _item = f"({_code},'{file_df.loc[file_df['商品编码'] == _code, '商品名称'].values[0]}'," \
-                        f"{file_df.loc[file_df['商品编码'] == _code, '商品单价'].values[0]},{data_in.get('Operator')})"
+                _item = f'''
+({_code},'{file_df.loc[file_df['商品编码'] == _code, '商品名称'].values[0]}',
+{file_df.loc[file_df['商品编码'] == _code, '商品单价'].values[0]},'{file_df.loc[file_df['商品编码'] == _code, '市场价'].values[0]}',
+'{file_df.loc[file_df['商品编码'] == _code, '购买价'].values[0]}',{data_in.get('Operator')})'''
                 insert_item.append(_item)
         if insert_item != []:
             insert_sql = base_insert_sql + ','.join(insert_item)
@@ -416,13 +434,12 @@ class RewardPointInterface:
         # 变量清空,复用,开始插入库存
         insert_item.clear()
         base_insert_sql = "insert into RewardPointDB.dbo.StockInDetail(" \
-                          "GoodsID,ChangeType,ChangeAmount,MeasureUnit,StockInOperator,StockInTime,CreatedBy) values "
+                          "GoodsID,ChangeType,ChangeAmount,MeasureUnit,CreatedBy) values "
         all_goodsCode = pd.read_sql("select GoodsID,GoodsCode from Goods where DataStatus=0", self.db_mssql)
         for _index in file_df.index:
             _item = f'''
 ({all_goodsCode.loc[all_goodsCode['GoodsCode'] == file_df.loc[_index, '商品编码'], 'GoodsID'].values[0]},0,
-{file_df.loc[_index, '数量']},'{file_df.loc[_index, '商品计量单位']}',
-{file_df.loc[_index, '入库者']},'{file_df.loc[_index, '进库时间']}',{data_in.get('Operator')})'''
+{file_df.loc[_index, '数量']},'{file_df.loc[_index, '商品计量单位']}',{data_in.get('Operator')})'''
             insert_item.append(_item)
         insert_sql = base_insert_sql + ','.join(insert_item)
         print(insert_sql)
@@ -431,8 +448,8 @@ class RewardPointInterface:
         self.db_mssql.commit()
         return True
 
-    def offShelf_goods(self, data_in: dict) -> bool:
-        sql = f"update [RewardPointDB].[dbo].[Goods] set Status=1 where GoodsCode in ({data_in.get('GoodsCode')})"
+    def set_goods_status(self, data_in: dict) -> bool:
+        sql = f"update [RewardPointDB].[dbo].[Goods] set Status={data_in.get('Status')} where GoodsCode in ({data_in.get('GoodsCode')})"
         cur = self.db_mssql.cursor()
         cur.execute(sql)
         self.db_mssql.commit()
