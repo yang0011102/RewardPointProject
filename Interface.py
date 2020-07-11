@@ -415,12 +415,14 @@ class RewardPointInterface:
         self.db_mssql.commit()
         # 变量清空,复用,开始插入库存
         insert_item.clear()
-        base_insert_sql = "insert into RewardPointDB.dbo.InventoryDetail(" \
-                          "GoodsID,ChangeType,ChangeAmount,MeasureUnit,CreatedBy) values "
+        base_insert_sql = "insert into RewardPointDB.dbo.StockInDetail(" \
+                          "GoodsID,ChangeType,ChangeAmount,MeasureUnit,StockInOperator,StockInTime,CreatedBy) values "
         all_goodsCode = pd.read_sql("select GoodsID,GoodsCode from Goods where DataStatus=0", self.db_mssql)
         for _index in file_df.index:
-            _item = f"({all_goodsCode.loc[all_goodsCode['GoodsCode']==file_df.loc[_index,'商品编码'],'GoodsID'].values[0]},0," \
-                    f"{file_df.loc[_index, '数量']},'{file_df.loc[_index, '商品计量单位']}',{data_in.get('Operator')})"
+            _item = f'''
+({all_goodsCode.loc[all_goodsCode['GoodsCode'] == file_df.loc[_index, '商品编码'], 'GoodsID'].values[0]},0,
+{file_df.loc[_index, '数量']},'{file_df.loc[_index, '商品计量单位']}',
+{file_df.loc[_index, '入库者']},'{file_df.loc[_index, '进库时间']}',{data_in.get('Operator')})'''
             insert_item.append(_item)
         insert_sql = base_insert_sql + ','.join(insert_item)
         print(insert_sql)

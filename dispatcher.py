@@ -90,7 +90,7 @@ def dispatcher(selector, data, files=None):
                                                                     },
                                     mustFile={'check_filetype': filetype_import_goods,
                                               'table_column': import_goods_columncheck,
-                                              # 'table_dateType': file_dateType_rewardPoint,
+                                              'table_dateType': file_dateType_import_goods,
                                               })
         if not flag:
             return _response

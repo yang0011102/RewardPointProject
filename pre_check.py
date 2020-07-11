@@ -43,6 +43,9 @@ pre_import_goods = {"Operator": int}
 filetype_import_goods = ['.xlsx', '.xls']  # 文件类型检查项
 import_goods_columncheck = ['商品编码', '商品名称', '商品单价', '商品计量单位', '数量']
 check_import_goods = ["Operator"]  # 必填
+file_dateType_import_goods = {'date_column': ['进库时间'],
+                              'dateType': ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d %H",
+                                           "%Y-%m-%d", "%Y/%m/%d %H:%M:%S"]}  # 文件内时间字段检查项
 
 # 下架商品
 pre_offShelf_goods = {"GoodsCode": str}
