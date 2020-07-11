@@ -22,6 +22,7 @@ class ShoppingCartInterface:
 
     # 添加商品进入购物车
     def addCart(self, data_in:dict):
+        print("add_cart")
         # 判断数量是否超过库存
         isOverStock = self.isOverStock(data_in=data_in)
         print(isOverStock)
@@ -115,10 +116,12 @@ class ShoppingCartInterface:
 
     # 查询购物车列表
     def getCartList(self, data_in:dict):
+        print("getCartList")
         JobId = data_in.get("Operator")
-        sql = "SELECT sc.ShoppingCartID,sc.GoodsID,sc.GoodsAmount,g.PictureUrl,g.Name,g.Price,g.ChargeUnit,g.TotalIn-g.TotalOut as stock FROM ShoppingCart sc LEFT JOIN Goods g ON g.GoodsID = sc.GoodsID WHERE sc.JobId = %s AND sc.Status = 1 AND sc.DataStatus = 1"%(JobId)
+        sql = "SELECT sc.ShoppingCartID,sc.GoodsID,sc.GoodsAmount,g.PictureUrl,g.Name,g.PointCost,g.ChargeUnit,g.TotalIn-g.TotalOut as stock FROM ShoppingCart sc LEFT JOIN Goods g ON g.GoodsID = sc.GoodsID WHERE sc.JobId = %s AND sc.Status = 1 AND sc.DataStatus = 1"%(JobId)
+        print(sql)
         res = pd.read_sql(sql=sql, con=self.db_mssql)
-
+        print(res)
         return res
     # 判断商品是否已在购物车
     def hasExist(self, data_in: dict):
@@ -138,11 +141,33 @@ class ShoppingCartInterface:
 
     # 查询商品库存
     def getStockById(self, data_in:dict):
+        print("a")
         id = data_in.get("GoodsID")
-        sql = "SELECT TotalIn,TotalOut FROM Goods WHERE GoodsID = %d" % (id)
-        info = pd.read_sql(sql=sql, con=self.db_mssql)
-        detail = df_tolist(info)[0]
-        TotalIn = detail.get("TotalIn")
-        TotalOut = detail.get("TotalOut")
+        TotalIn = self.getGoodsTotalIn(id)
+        TotalOut = self.getGoodsTotalOut(id)
         stock = TotalIn - TotalOut
+        print(TotalIn, TotalOut, stock)
         return stock
+
+    # 查询商品的总入库
+    def getGoodsTotalIn(self, GoodsID):
+        sql = "SELECT sid.GoodsID, SUM(sid.ChangeAmount) AS TotalIn FROM StockInDetail sid WHERE sid.DataStatus = 0 AND sid.GoodsID = %s GROUP BY sid.GoodsID"%(GoodsID)
+        info = pd.read_sql(sql=sql, con=self.db_mssql)
+        TotalIn = 0
+        if len(df_tolist(info)) > 0:
+            detail = df_tolist(info)[0]
+            TotalIn = detail.get("TotalIn")
+
+        return TotalIn
+
+    #查看商品的总出库
+    def getGoodsTotalOut(self, GoodsID):
+        sql = "SELECT sod.GoodsID, SUM(sod.ChangeAmount) AS TotalOut FROM StockOutDetail sod WHERE sod.DataStatus = 1 AND sod.GoodsID = %s GROUP BY sod.GoodsID" % (
+            GoodsID)
+        info = pd.read_sql(sql=sql, con=self.db_mssql)
+        TotalOut = 0
+        if len(df_tolist(info)) > 0:
+            detail = df_tolist(info)[0]
+            TotalOut = detail.get("TotalOut")
+
+        return TotalOut

@@ -22,6 +22,8 @@ class OrderInterface:
 
     # 创建订单
     def createOrder(self, data_in:dict):
+        GoodsIDs = data_in.get("GoodsIDs")
+        ShoppingCartIDs = data_in.get("ShoppingCartIDs")
         cur = self.db_mssql.cursor()
         Operator = data_in.get("Operator")
         # 在订单表生成一条记录
@@ -37,9 +39,12 @@ class OrderInterface:
         print(cur.lastrowid)
         # 生成之后获取该记录ID
         PointOrderID = cur.lastrowid
-        self.db_mssql.commit()
-
-        # 在订单商品表里新增记录
+        # self.db_mssql.commit()
+        # 根据GoodsID获取商品的信息
+        print(PointOrderID)
+        print(GoodsIDs)
+        # 将商品的信息和订单号存入订单商品表
+        # 商品出库表新增数据，状态均为锁定
         # 将购物车的记录状态变成无效
         # 将商品的TotalOut更新
         return True
