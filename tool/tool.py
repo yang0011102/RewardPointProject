@@ -3,17 +3,19 @@
 import json
 import time
 
-import numpy
+import numpy as np
 import pandas as pd
+
+from config.config import DOWNLOAD_FOLDER
 
 
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, numpy.integer):
+        if isinstance(obj, np.integer):
             return int(obj)
-        elif isinstance(obj, numpy.floating):
+        elif isinstance(obj, np.floating):
             return float(obj)
-        elif isinstance(obj, numpy.ndarray):
+        elif isinstance(obj, np.ndarray):
             return obj.tolist()
         else:
             return super(MyEncoder, self).default(obj)
@@ -42,6 +44,45 @@ def isVaildDate(date, timeType="%Y-%m-%d %H:%M:%S"):
         return True
     except:
         return False
+
+def getChlidType(dbcon) -> dict:
+    '''
+    返回所有积分类型的所有子类型
+    :param dbcon: MSSQL连接器
+    :return:
+    '''
+    rewardPointsType_df = pd.read_sql(
+        'select RewardPointsTypeID,ParentID,ChildrenID,RewardPointsTypeCode,Name from RewardPointsType where DataStatus=0',
+        dbcon)
+    res = {}
+    for _name in rewardPointsType_df['Name'].tolist():
+        _rewardPointsType_container = []
+        # 遍历多叉
+        childID = rewardPointsType_df.loc[
+            rewardPointsType_df['Name'] == _name, 'ChildrenID'].tolist()
+        while True:
+            while None in childID:  # 删除空
+                childID.remove(None)
+            if len(childID) != 0:
+                childID_list = childID[0].split(',')
+                childName = rewardPointsType_df.loc[
+                    rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'Name'].values
+                childID = rewardPointsType_df.loc[
+                    rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'ChildrenID'].tolist()
+                _rewardPointsType_container.extend(childName)
+            else:
+                break
+        res[_name] = _rewardPointsType_container
+    return res
+
+def get_dfUrl(df: pd.DataFrame, Operator: str) -> str:
+    filename = Operator + str(time.time()) + ".xlsx"
+    print('文件名', filename)
+    filepath = DOWNLOAD_FOLDER + '/' + filename
+    print('文件路径', filepath)
+    df.to_excel(filepath, index=False)
+    print('保存到', filepath)
+    return "http://192.168.40.229:8080/download/" + filename  # 传回相对路径
 
 
 def isEmpty(obj):
