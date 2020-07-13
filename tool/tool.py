@@ -1,5 +1,5 @@
 # utf-8
-
+import datetime
 import json
 import time
 
@@ -17,6 +17,8 @@ class MyEncoder(json.JSONEncoder):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, pd.Timestamp):
+            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
         else:
             return super(MyEncoder, self).default(obj)
 
@@ -28,8 +30,49 @@ def df_tolist(df: pd.DataFrame):
     return res_list
 
 
-def datetime_string(time, timeType="%Y-%m-%d %H:%M:%S"):
-    return time.strftime(timeType)
+def datetime_string(t: datetime.datetime, timeType="%Y-%m-%d %H:%M:%S"):
+    return t.strftime(timeType)
+
+
+def str2timestamp(timestring: str, timeType="%Y-%m-%d %H:%M:%S"):
+    return time.mktime(time.strptime(timestring, timeType))
+
+
+def time_compare(time1: str, time2: str, timeType):
+    return str2timestamp(time1, timeType) > str2timestamp(time2, timeType)
+
+
+def sub_stringtime(time1: str, time2: str, timeType):
+    return str2timestamp(time1, timeType) - str2timestamp(time2, timeType)
+
+
+def sub_datetime(beginDate: datetime.datetime, endDate: datetime.datetime) -> (int, int):
+    date_byyear = datetime.datetime(year=endDate.year, month=beginDate.month, day=beginDate.day)
+    if beginDate.year == endDate.year:
+        year = 0
+        days = (endDate - date_byyear).days
+        if endDate.day >= beginDate.day:
+            months = endDate.month - beginDate.month
+        else:
+            months = endDate.month - beginDate.month - 1
+    elif beginDate.year < endDate.year:
+        if date_byyear.__le__(endDate):  # 纪念日到了
+            year = endDate.year - beginDate.year
+            days = (endDate - date_byyear).days
+            if endDate.day <= beginDate.day:
+                months = endDate.month - beginDate.month - 1
+            else:
+                months = endDate.month - beginDate.month
+        else:  # 纪念日没到
+            year = endDate.year - beginDate.year - 1
+            days = 365+(endDate - date_byyear).days
+            if endDate.day >= beginDate.day:
+                months = 12+endDate.month - beginDate.month
+            else:
+                months = endDate.month - beginDate.month+11
+    else:
+        year, months, days = 0, 0, 0
+    return year, months, days
 
 
 def isVaildDate(date, timeType="%Y-%m-%d %H:%M:%S"):
