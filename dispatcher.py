@@ -11,12 +11,14 @@ from InterfaceModules.upload import UploadInterface
 from InterfaceModules.activity import ActivityInterface
 from InterfaceModules.shoppingCart import ShoppingCartInterface
 from InterfaceModules.order import OrderInterface
+from InterfaceModules.dd import DDInterface
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+ddWorker = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
 
 def dispatcher(selector, data, files=None):
@@ -232,6 +234,12 @@ def dispatcher(selector, data, files=None):
             _response = {"code": 0,
                          "msg": ""
                          }
+    elif selector == "getUserInfo":
+        res = ddWorker.getUserInfo(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": res
+                     }
     else:
         _response = {"code":9999,
                      "msg":"无效的接口"
