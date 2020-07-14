@@ -59,7 +59,7 @@ def sub_datetime(beginDate: datetime.datetime, endDate: datetime.datetime) -> (i
         if date_byyear.__le__(endDate):  # 纪念日到了
             year = endDate.year - beginDate.year
             days = (endDate - date_byyear).days
-            if endDate.day <= beginDate.day:
+            if endDate.day < beginDate.day:
                 months = endDate.month - beginDate.month - 1
             else:
                 months = endDate.month - beginDate.month
@@ -74,6 +74,16 @@ def sub_datetime(beginDate: datetime.datetime, endDate: datetime.datetime) -> (i
         year, months, days = 0, 0, 0
     return year, months, days
 
+def sub_datetime_Bydayone(beginDate: datetime.datetime, endDate: datetime.datetime) -> (int, int):
+    if beginDate.day > 1:
+        months = endDate.month - beginDate.month
+    else:
+        months = endDate.month - beginDate.month + 1
+    if beginDate.day == 1 and beginDate.day == 1:
+        year = endDate.year - beginDate.year + 1
+    else:
+        year = endDate.year - beginDate.year
+    return year, months
 
 def isVaildDate(date, timeType="%Y-%m-%d %H:%M:%S"):
     '''

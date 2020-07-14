@@ -152,155 +152,341 @@ class RewardPointInterface:
         return totalLength, res_df
 
     def _base_query_rewardPointDetail_Full(self, data_in: dict):
-        # 取详情
-        if data_in.get('jobid') or data_in.get('name'):
-            temp_data = data_in.copy()
-            errflag = temp_data.pop('page', '404')
-            if errflag == '404':
-                errflag = temp_data.pop('pageSize', '404')
-            _, detail_df = self._base_query_rewardPointDetail(data_in=temp_data)
-            summary_df = pd.DataFrame(
-                columns=('工号', '姓名', '现有A分', '现有B管理积分', '固定积分', '年度管理积分', '年度累计积分', '总获得A分', '总获得B管理积分', '总累计积分'))
-            if data_in.get('name'):  # 姓名转工号
-                man = detail_df.loc[detail_df['Name'] == data_in.get('name'), 'JobId'].values[0]
-            else:
-                man = data_in.get('jobid')
-            man_data = {}
-            man_data['工号'] = man
-            man_select = detail_df['JobId'] == man
-            #  现有A分
-            BonusPoints, MinusPoints = detail_df.loc[
-                (detail_df['积分类型'] == 'A分') & man_select, ['BonusPoints', 'MinusPoints']].sum(axis=0)
-            ChangeAmount = detail_df.loc[
-                (detail_df['积分类型'] == 'A分') & (detail_df['ChangeType'] == 1) & man_select, 'ChangeAmount'].sum(
-                axis=0)  # 兑换
-            man_data['现有A分'] = BonusPoints - MinusPoints - ChangeAmount
-            #  现有B管理积分
-            manageBonusPoints, manageMinusPoints = man_data['现有B管理积分'] = detail_df.loc[
-                (detail_df['积分类型'] == '管理积分') & man_select, ['BonusPoints', 'MinusPoints']].sum(axis=0)
-            man_data['现有B管理积分'] = manageBonusPoints - manageMinusPoints
-            #  学历,职称积分
+        # 基本信息
+        today = datetime.datetime.today()  # 今天
+        newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
+        query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+                      "bd_psndoc.enablestate =2", "edu.lasteducation='Y'",
+                      f"rownum<={data_in.get('pageSize')}*{data_in.get('page')}"]
+        temp_data = data_in.copy()
+        errflag = temp_data.pop('page', '404')
+        if errflag == '404':
+            errflag = temp_data.pop('pageSize', '404')
+        # _, detail_df = self._base_query_rewardPointDetail(data_in=temp_data)
+        if data_in.get('name'):  # 姓名
+            query_item.append(f"bd_psndoc.name='{data_in.get('name')}'")
+        if data_in.get('jobid'):
+            query_item.append(f"bd_psndoc.name='{data_in.get('jobid')}'")
+        query_sql = " where " + ' and '.join(query_item)
+        if data_in.get('pageSize') and data_in.get('page'):
             maninfo_base_sql = '''
-                                select 
-                                bd_psndoc.name as 姓名,bd_psndoc.code as 工号,tectittle.name as 职称,
-                                c1.name as 学历,edu.school as 学校
-                                from hi_psnjob
-                                join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-                                left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
-                                join bd_defdoc c1 on edu.education = c1.pk_defdoc
-                                left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
-                                left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle
-                                where 
-                                hi_psnjob.endflag ='N' and hi_psnjob.ismainjob ='Y' and hi_psnjob.lastflag  ='Y' 
-                                and bd_psndoc.enablestate =2
-                                and edu.lasteducation='Y'
-                                 '''
-            query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
-                          "bd_psndoc.enablestate =2", "edu.lasteducation='Y'", f"bd_psndoc.code='{man}'"]
-            maninfo_sql = maninfo_base_sql + " where " + ' and '.join(query_item)
-            maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
-            SchoolPoints = 0
-            is985211 = False
-            TittlePoints = 0  # 这个还没做
-            School_data = {}
-            if len(maninfo_df) != 0:
-                if len(self.rewardPointStandard.loc[
-                           self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount']) == 1:
-                    SchoolPoints = self.rewardPointStandard.loc[
-                        self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount'].values[0]
-                    if maninfo_df.loc[0, '学历'] == '本科' and maninfo_df.loc[0, '学校'] in self.HighSchoolList:
-                        is985211 = True
-                        SchoolPoints += 500
-                School_data['schoolPoints'] = SchoolPoints
-                School_data['education'] = maninfo_df.loc[0, '学历']
-                School_data['is985211'] = is985211
-                # TittlePoints = self.rewardPointStandard.loc[
-                #     self.rewardPointStandard['CheckItem'] ==SchoolTittle_df.loc[0, '职称']
-                # ]
-
-            ServingAge_base_sql = '''
-            select 
-hi_psnjob.begindate,hi_psnjob.enddate
-from hi_psnjob
-join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-where
-hi_psnjob.ismainjob ='Y' 
-and bd_psndoc.enablestate =2
-and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N')
-and bd_psndoc.code='{}'
-order by bd_psndoc.code,hi_psnjob.begindate
+            select * 
+            from (
+            select  rownum as rowno,
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,tectittle.name as 职称,
+            c1.name as 学历,edu.school as 学校
+            from hi_psnjob
+            join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+            left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
+            join bd_defdoc c1 on edu.education = c1.pk_defdoc
+            left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
+            left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle 
+            {0[0]}
+            ) temptable
+            where temptable.rowno >{0[1]}*({0[2]}-1)'''
+            sql_item = [query_sql, data_in.get('pageSize'), data_in.get('page')]
+        else:
+            maninfo_base_sql = '''
+            select  
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,tectittle.name as 职称,
+            c1.name as 学历,edu.school as 学校
+            from hi_psnjob
+            join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+            left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
+            join bd_defdoc c1 on edu.education = c1.pk_defdoc
+            left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
+            left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle {0[0]}
             '''
-            ServingAge_sql = ServingAge_base_sql.format(man)
-            manServing_df = pd.read_sql(ServingAge_sql, self.db_mssql)
-            #  工龄积分
-            serving_data = {}
-            serving_begindate = datetime.datetime.strptime(manServing_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
-            serving_count_time = datetime.datetime(year=2014, month=1, day=1)
+            sql_item = [query_sql]
+        maninfo_sql = maninfo_base_sql.format(sql_item)
+        print(maninfo_sql)
+        maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
+        maninfo_df = maninfo_df.reindex(columns=(
+            '姓名', '工号', '职称', '学历', '学校', '现有A分', '现有管理积分', '固定积分', '年度管理积分',
+            '年度累计积分', '总获得A分', '总获得管理积分', '总累计积分',
+            '学历积分', '职称积分', '工龄积分', '职务积分'))
+        all_id = maninfo_df['工号'].tolist()
+        tempidlist = []
+        for _ii in all_id:
+            tempidlist.append("\'" + _ii + "\'")
+        all_id_tupe = ','.join(tempidlist)
+        # A 管理分表
+        mssql_base_sql = '''
+        select
+        dt.JobId,dt.BonusPoints,dt.MinusPoints,dt.ChangeType,dt.ChangeAmount,dt.IsAccounted,a.Name as 积分类型
+        from
+        RewardPointDB.dbo.RewardPointsDetail dt
+        join RewardPointDB.dbo.RewardPointsType a on dt.RewardPointsTypeID=a.RewardPointsTypeID 
+        '''
+        mssql_query_item = ['dt.DataStatus=0', 'a.DataStatus=0', ]
+        mssql_sql = mssql_base_sql + " where " + ' and '.join(mssql_query_item)
+        pointdetail = pd.read_sql(mssql_sql, self.db_mssql)
 
+        #  工龄表
+        ServingAge_base_sql = '''
+        select bd_psndoc.code,
+        min(hi_psnjob.begindate) as begindate
+        from hi_psnjob
+        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+        where
+        hi_psnjob.ismainjob ='Y' 
+        and bd_psndoc.enablestate =2
+        and (hi_psnjob.enddate>'2018-01-01' or hi_psnjob.endflag='N')
+        and bd_psndoc.code in ({})
+        group by bd_psndoc.code 
+                    '''
+        ServingAge_sql = ServingAge_base_sql.format(all_id_tupe)
+        manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
+
+        #  职务表
+        jobrank_base_sql = '''
+        select 
+        ncinfo.*,std.PointsAmount
+        from
+        openquery(NC,'
+                select 
+                hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,
+                om_jobrank.jobrankname as 职等
+                from hi_psnjob
+                join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+                join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
+                where
+                hi_psnjob.ismainjob =''Y''
+                and bd_psndoc.enablestate =2
+                and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'')
+                and bd_psndoc.code in ({})
+                order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo
+        join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
+        where std.DataStatus=0
+        '''
+        tempidlist = []
+        for _ii in all_id:
+            tempidlist.append("\'\'" + _ii + "\'\'")
+        all_id_tupe = ','.join(tempidlist)
+        jobrank_sql = jobrank_base_sql.format(all_id_tupe)
+        print(jobrank_sql)
+        jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
+        jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
+
+        # 填充
+        for i in maninfo_df.index:
+            man = maninfo_df.loc[i, '工号']
+            #  现有A分
+            man_select = pointdetail['JobId'] == man
+            # accounted_select = man_select & pointdetail['IsAccounted'] == 1
+            unaccounted_select = man_select & pointdetail['IsAccounted'] == 0
+            BonusPoints, MinusPoints = pointdetail.loc[
+                (pointdetail['积分类型'] == 'A分') & unaccounted_select, ['BonusPoints', 'MinusPoints']].sum(
+                axis=0)
+            ChangeAmount = pointdetail.loc[
+                (pointdetail['积分类型'] == 'A分') & (
+                        pointdetail['ChangeType'] == 1) & unaccounted_select, 'ChangeAmount'].sum(
+                axis=0)  # 兑换
+            returnAmount = pointdetail.loc[
+                (pointdetail['积分类型'] == 'A分') & (
+                        pointdetail['ChangeType'] == 2) & unaccounted_select, 'ChangeAmount'].sum(
+                axis=0)  # 退回
+            maninfo_df.loc[i, '现有A分'] = BonusPoints - MinusPoints - ChangeAmount + returnAmount
+            maninfo_df.loc[i, '总获得A分'] = pointdetail.loc[(pointdetail['积分类型'] == 'A分') & man_select, 'BonusPoints'].sum(axis=0)
+            #  现有管理积分
+            manageBonusPoints, manageMinusPoints = pointdetail.loc[
+                (pointdetail['积分类型'] == '管理积分') & unaccounted_select, ['BonusPoints', 'MinusPoints']].sum(axis=0)
+            manageChangeAmount = pointdetail.loc[
+                (pointdetail['积分类型'] == '管理积分') & (
+                        pointdetail['ChangeType'] == 1) & unaccounted_select, 'ChangeAmount'].sum(
+                axis=0)  # 兑换
+            returnmanageAmount = pointdetail.loc[
+                (pointdetail['积分类型'] == '管理积分') & (
+                        pointdetail['ChangeType'] == 2) & unaccounted_select, 'ChangeAmount'].sum(
+                axis=0)  # 退回
+            maninfo_df.loc[
+                i, '现有管理积分'] = manageBonusPoints - manageMinusPoints - manageChangeAmount + returnmanageAmount
+            maninfo_df.loc[i, '总获得管理积分'] = pointdetail.loc[
+                (pointdetail['积分类型'] == '管理积分') & man_select, 'BonusPoints'].sum(axis=0)
+            # 年度
+            #  学历积分
+            SchoolPoints = 0
+            if len(self.rewardPointStandard.loc[
+                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[i, '学历'], 'PointsAmount']) == 1:
+                SchoolPoints = self.rewardPointStandard.loc[
+                    self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount'].values[0]
+                if maninfo_df.loc[0, '学历'] == '本科' and maninfo_df.loc[0, '学校'] in self.HighSchoolList:
+                    SchoolPoints += 500
+            maninfo_df.loc[i, '学历积分'] = SchoolPoints
+            # 职称积分
+            TittlePoints = 0  # 这个还没做
+            # maninfo_df.loc[i, '职称积分'] = TittlePoints
+            # 工龄积分
+            serving_begindate = datetime.datetime.strptime(
+                manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
+            serving_count_time = datetime.datetime(year=2014, month=1, day=1)
             if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
                 serving_begindate = serving_count_time
-            today = datetime.datetime.today()
-            years, months, days = sub_datetime(beginDate=serving_begindate, endDate=today)
-            ServingAgePoints = int((years + days / 365) * 2000)
-            serving_data['begindate'] = manServing_df.loc[0, 'BEGINDATE']
-            serving_data['servingAge_years'] = years
-            serving_data['servingAge_months'] = months
-            serving_data['servingAgePoints'] = ServingAgePoints
-            #  职务积分
-            jobrank_data = []  # 职务积分详情容器
-            jobrank_base_sql = '''
-            select 
-hi_psnjob.begindate,hi_psnjob.enddate,
-om_jobrank.jobrankname as 职等
-from hi_psnjob
-join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
-where
-hi_psnjob.ismainjob ='Y' 
-and bd_psndoc.enablestate =2
-and (hi_psnjob.enddate>'2018-01-01' or hi_psnjob.endflag='N')
-and bd_psndoc.code='{}'
-order by bd_psndoc.code,hi_psnjob.begindate
-            '''
-            jobrank_sql = jobrank_base_sql.format(man)
-            jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
-            jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
-            jobrank_begindate = datetime.datetime.strptime(jobrank_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
-            if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
-                jobrank_begindate = jobrank_count_time
-            jobrank_df.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
-            for _index in jobrank_df.index:
-                if pd.isna(jobrank_df.loc[_index, 'ENDDATE']):
-                    temp_enddate = today
-                    islatest = True
-                else:
-                    temp_enddate = datetime.datetime.strptime(jobrank_df.loc[0, 'ENDDATE'], "%Y-%m-%d")
-                    islatest = False
-                temp_begindate = jobrank_df.loc[0, 'BEGINDATE']
-                years, months, days = sub_datetime(beginDate=temp_begindate, endDate=temp_enddate)
-                temp_jobrankpoint = 0
-                jobrank = jobrank_df.loc[_index, '职等']
-                if len(jobrank) == 1:
+            years, months = sub_datetime_Bydayone(beginDate=serving_begindate,
+                                                  endDate=datetime.datetime(year=today.year, month=12, day=30))
+            ServingAgePoints = int((years + months / 12) * 2000)
+            maninfo_df.loc[i, '工龄积分'] = ServingAgePoints
+            # 职务积分
+            jobrankpoint = 0  #
+            man_workinfo = jobrank_df.loc[jobrank_df['CODE'] == man, :].reset_index()  # 取个人的工作信息
+            if len(man_workinfo) > 0:
+                jobrank_begindate = datetime.datetime.strptime(man_workinfo.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
+                if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
+                    jobrank_begindate = jobrank_count_time
+                man_workinfo.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
+                for _index in man_workinfo.index:
+                    if pd.isna(man_workinfo.loc[_index, 'ENDDATE']):
+                        temp_enddate = today
+                    else:
+                        temp_enddate = datetime.datetime.strptime(man_workinfo.loc[_index, 'ENDDATE'], "%Y-%m-%d")
+                    if isinstance(man_workinfo.loc[_index, 'BEGINDATE'], str):
+                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[_index, 'BEGINDATE'], "%Y-%m-%d")
+                    else:
+                        temp_begindate = man_workinfo.loc[_index, 'BEGINDATE']
+                    if temp_begindate.__ge__(newYearsDay):  # 过了元旦不算
+                        continue
+                    elif temp_enddate.__ge__(newYearsDay):
+                        temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
+                    years, months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
                     temp_standard = 0
-                    if len(self.rewardPointStandard[
-                               self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount']) == 1:
-                        temp_standard = self.rewardPointStandard[
-                            self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
-                                _index, '职等'], 'PointsAmount'].values[0]
-                    temp_jobrankpoint = int(temp_standard * (months + years * 12))
-                jobrank_data.append({'begindate': temp_begindate,
-                                     'enddate': temp_enddate,
-                                     'islatest': islatest,
-                                     'jobrank': jobrank,
-                                     'jobrankpoint': temp_jobrankpoint})
+                    if len(man_workinfo.loc[_index, '职等']) == 1:
+                        temp_standard = man_workinfo.loc[_index, '职等']
+                    jobrankpoint += int(temp_standard * (months + years * 12))
+            maninfo_df.loc[i, '职务积分'] = jobrankpoint
+            maninfo_df.loc[i, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
 
-            # 存起来
-            man_data['学历积分'] = School_data
-            man_data['职称积分'] = TittlePoints
-            man_data['工龄积分'] = serving_data
-            man_data['职务积分'] = jobrank_data
-            # 填充
-            summary_df = summary_df.append(man_data, ignore_index=True)
+    def query_B_rewardPointDetail(self, data_in: dict) -> dict:
+        today = datetime.datetime.today()  # 今天
+        newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
+        man_data = {}
+        man = data_in.get('jobid')
+        man_data['工号'] = man
+        #  学历,职称积分
+        maninfo_base_sql = '''
+        select 
+        bd_psndoc.name as 姓名,bd_psndoc.code as 工号,tectittle.name as 职称,
+        c1.name as 学历,edu.school as 学校
+        from hi_psnjob
+        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+        left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
+        join bd_defdoc c1 on edu.education = c1.pk_defdoc
+        left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
+        left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle
+                                         '''
+        query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+                      "bd_psndoc.enablestate =2", "edu.lasteducation='Y'", f"bd_psndoc.code='{man}'"]
+        maninfo_sql = maninfo_base_sql + " where " + ' and '.join(query_item)
+        print(maninfo_sql)
+        maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
+        SchoolPoints = 0
+        is985211 = False
+        TittlePoints = 0  # 这个还没做
+        School_data = {}
+        if len(maninfo_df) != 0:
+            if len(self.rewardPointStandard.loc[
+                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount']) == 1:
+                SchoolPoints = self.rewardPointStandard.loc[
+                    self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount'].values[0]
+                if maninfo_df.loc[0, '学历'] == '本科' and maninfo_df.loc[0, '学校'] in self.HighSchoolList:
+                    is985211 = True
+                    SchoolPoints += 500
+            School_data['schoolPoints'] = SchoolPoints
+            School_data['education'] = maninfo_df.loc[0, '学历']
+            School_data['is985211'] = is985211
+            # TittlePoints = self.rewardPointStandard.loc[
+            #     self.rewardPointStandard['CheckItem'] ==SchoolTittle_df.loc[0, '职称']
+            # ]
+        ServingAge_base_sql = '''
+        select 
+        hi_psnjob.begindate,hi_psnjob.enddate
+        from hi_psnjob
+        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+        where
+        hi_psnjob.ismainjob ='Y' 
+        and bd_psndoc.enablestate =2
+        and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N')
+        and bd_psndoc.code='{}'
+        order by bd_psndoc.code,hi_psnjob.begindate
+                    '''
+        ServingAge_sql = ServingAge_base_sql.format(man)
+        manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
+        #  工龄积分
+        serving_data = {}
+        serving_begindate = datetime.datetime.strptime(manServing_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
+        serving_count_time = datetime.datetime(year=2014, month=1, day=1)
+        if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
+            serving_begindate = serving_count_time
+        years, months = sub_datetime_Bydayone(beginDate=serving_begindate,
+                                              endDate=datetime.datetime(year=today.year, month=12, day=30))
+        ServingAgePoints = int((years + months / 12) * 2000)
+        serving_data['begindate'] = manServing_df.loc[0, 'BEGINDATE']
+        serving_data['servingAge_years'] = years
+        serving_data['servingAge_months'] = months
+        serving_data['servingAgePoints'] = ServingAgePoints
+        #  职务积分
+        jobrank_data = []  # 职务积分详情容器
+        jobrank_base_sql = '''
+        select 
+        hi_psnjob.begindate,hi_psnjob.enddate,
+        om_jobrank.jobrankname as 职等
+        from hi_psnjob
+        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+        join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
+        where
+        hi_psnjob.ismainjob ='Y' 
+        and bd_psndoc.enablestate =2
+        and (hi_psnjob.enddate>'2018-01-01' or hi_psnjob.endflag='N')
+        and bd_psndoc.code='{}'
+        order by bd_psndoc.code,hi_psnjob.begindate
+        '''
+        jobrank_sql = jobrank_base_sql.format(man)
+        print(jobrank_sql)
+        jobrank_df = pd.read_sql(jobrank_sql, self.db_nc)
+        jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
+        jobrank_begindate = datetime.datetime.strptime(jobrank_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
+        if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
+            jobrank_begindate = jobrank_count_time
+        jobrank_df.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
+
+        for _index in jobrank_df.index:
+            if pd.isna(jobrank_df.loc[_index, 'ENDDATE']):
+                temp_enddate = today
+                islatest = True
+            else:
+                temp_enddate = datetime.datetime.strptime(jobrank_df.loc[_index, 'ENDDATE'], "%Y-%m-%d")
+                islatest = False
+            if isinstance(jobrank_df.loc[_index, 'BEGINDATE'], str):
+                temp_begindate = datetime.datetime.strptime(jobrank_df.loc[_index, 'BEGINDATE'], "%Y-%m-%d")
+            else:
+                temp_begindate = jobrank_df.loc[_index, 'BEGINDATE']
+            if temp_begindate.__ge__(newYearsDay):  # 过了元旦不算
+                continue
+            elif temp_enddate.__ge__(newYearsDay):
+                temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
+            years, months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
+            temp_jobrankpoint = 0
+            jobrank = jobrank_df.loc[_index, '职等']
+            if len(jobrank) == 1:
+                temp_standard = 0
+                if len(self.rewardPointStandard[
+                           self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount']) == 1:
+                    temp_standard = self.rewardPointStandard[
+                        self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
+                            _index, '职等'], 'PointsAmount'].values[0]
+                temp_jobrankpoint = int(temp_standard * (months + years * 12))
+            jobrank_data.append({'begindate': datetime_string(temp_begindate, timeType="%Y-%m-%d"),
+                                 'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
+                                 'islatest': islatest,
+                                 'jobrank': jobrank,
+                                 'jobrankpoint': temp_jobrankpoint})
+
+        # 存起来
+        man_data['学历积分'] = School_data
+        man_data['职称积分'] = TittlePoints
+        man_data['工龄积分'] = serving_data
+        man_data['职务积分'] = jobrank_data
+
+        return man_data
 
     def query_rewardPoint(self, data_in: dict) -> (int, pd.DataFrame):
         '''
@@ -575,4 +761,5 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    print(worker.test1())
+
+    print(worker._base_query_rewardPointDetail_Full(data_in={"page": 1, "pageSize": 10}))
