@@ -21,24 +21,16 @@ class OrderInterface:
             encoding="UTF-8", nencoding="UTF-8")
 
     # 创建订单
-    def createOrder(self, data_in:dict):
+    def createOrder(self, data_in: dict):
         cur = self.db_mssql.cursor()
         Operator = data_in.get("Operator")
-        # 在订单表生成一条记录
-        insert_sql = "insert into [RewardPointDB].[dbo].[PointOrder] ({}) values ({})"
-        sql_item = ["OrderStatus", "DataStatus", "JobId", "CreatedBy"]
-        sql_values = ["1", "0", Operator, Operator]
-        for item in sql_values:
-            if isinstance(item, str):  # 如果是字符串 加上引号
-                item = "\'" + item + "\'"
-        sql = insert_sql.format(','.join(sql_item), ','.join(list(map(str, sql_values))))
-        cur.execute(sql)
-        # 生成之后获取该记录ID
-        PointOrderID = cur.lastrowid
+
 
         # 获取购物车信息
         shoppingCartList = self.getShoppingCartList(JobId=Operator)
         print(shoppingCartList)
+        totalNum = 0
+        totalPrice = 0
         isOverStock = False
         errMsg=''
         # 判断购物车商品是否超过库存,若超过库存，给出提示：某某商品超过库存，请修改购物车数量
@@ -50,12 +42,27 @@ class OrderInterface:
                 name = item.get("Name")
                 stock = item.get("TotalIn") - item.get("TotalOut")
                 num = item.get("GoodsAmount")
+                price = item.get("PointCost")
+                goodsTotalPrice = num * price
+                totalNum = num + totalNum
+                totalPrice = goodsTotalPrice + totalPrice
                 if num>stock:
                     isOverStock = True
                     errMsg = name + '超过库存，请修改购物车数量'
 
         if isOverStock:
             return False, errMsg
+        # 在订单表生成一条记录
+        insert_sql = "insert into [RewardPointDB].[dbo].[PointOrder] ({}) values ({})"
+        sql_item = ["OrderStatus", "DataStatus", "JobId", "CreatedBy", "TotalPrice", "TotalNum"]
+        sql_values = ["1", "0", Operator, Operator, totalPrice, totalNum]
+        for item in sql_values:
+            if isinstance(item, str):  # 如果是字符串 加上引号
+                item = "\'" + item + "\'"
+        sql = insert_sql.format(','.join(sql_item), ','.join(list(map(str, sql_values))))
+        cur.execute(sql)
+        # 生成之后获取该记录ID
+        PointOrderID = cur.lastrowid
         # 将商品的信息和订单号存入订单商品表
         insert_order_goods_base_sql = "insert into [RewardPointDB].[dbo].[PointOrderGoods] ({}) values ({})"
         sql_order_goods_item = ["PointOrderID", "GoodsID", "OrderGoodsAmount", "CreatedBy", "DataStatus"]
