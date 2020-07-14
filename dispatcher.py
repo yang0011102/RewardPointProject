@@ -11,14 +11,12 @@ from config.dbconfig import *
 from pre_check import *
 from tool.tool import *
 
-
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 ddWorker = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-
 
 def dispatcher(selector, data, files=None):
     '''
@@ -235,12 +233,16 @@ def dispatcher(selector, data, files=None):
                 }
 
     elif selector == "create_order":
-        res = orderWorker.createOrder(data_in=data)
-
+        res, errMsg = orderWorker.createOrder(data_in=data)
         if res:
             _response = {"code": 0,
                          "msg": ""
                          }
+        else:
+            _response = {
+                "code": -1,
+                "msg": errMsg
+            }
     elif selector == "getUserInfo":
         res = ddWorker.getUserInfo(data_in=data)
         _response = {"code": 0,

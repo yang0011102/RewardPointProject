@@ -17,6 +17,9 @@ class MyEncoder(json.JSONEncoder):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, pd.Timestamp):
+            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
+
         else:
             return super(MyEncoder, self).default(obj)
 
