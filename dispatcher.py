@@ -243,6 +243,53 @@ def dispatcher(selector, data, files=None):
                 "code": -1,
                 "msg": errMsg
             }
+    elif selector == "query_order":
+        res = orderWorker.getOrderList(data_in=data)
+        _response = {
+            "code": 0,
+            "msg": "",
+            "data": {
+                "list":res
+            }
+        }
+        print(_response)
+
+    elif selector == "confirm_order":
+        res = orderWorker.confirmOrder(data_in=data)
+        if res:
+            _response = {
+                "code": 0,
+                "msg": "",
+            }
+        else:
+            _response = {
+                "code": -1,
+                "msg": "确定失败，请联系管理员",
+            }
+    elif selector == "reject_order":
+        res = orderWorker.rejectOrder(data_in=data)
+        if res:
+            _response = {
+                "code": 0,
+                "msg": "",
+            }
+        else:
+            _response = {
+                "code": -1,
+                "msg": "退回失败，请联系管理员",
+            }
+    elif selector == "finish_order":
+        res = orderWorker.finishOrder(data_in=data)
+        if res:
+            _response = {
+                "code": 0,
+                "msg": "",
+            }
+        else:
+            _response = {
+                "code": -1,
+                "msg": "确认领取失败，请联系管理员",
+            }
     elif selector == "getUserInfo":
         res = ddWorker.getUserInfo(data_in=data)
         _response = {"code": 0,
