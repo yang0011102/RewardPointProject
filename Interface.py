@@ -151,23 +151,34 @@ class RewardPointInterface:
         print(totalLength, res_df)
         return totalLength, res_df
 
-    def _base_query_rewardPointDetail_Full(self, data_in: dict):
+    def _base_query_RewardPointSummary(self, data_in: dict) -> (int, pd.DataFrame):
         # 基本信息
+        length_base_sql = '''
+select  
+count(bd_psndoc.code) as res
+from hi_psnjob
+join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
+join bd_defdoc c1 on edu.education = c1.pk_defdoc
+left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
+left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle 
+where hi_psnjob.endflag = 'N' and hi_psnjob.ismainjob = 'Y' and hi_psnjob.lastflag = 'Y' and bd_psndoc.enablestate = 2
+and edu.lasteducation = 'Y'
+'''
         today = datetime.datetime.today()  # 今天
         newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
         query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
-                      "bd_psndoc.enablestate =2", "edu.lasteducation='Y'",
-                      f"rownum<={data_in.get('pageSize')}*{data_in.get('page')}"]
-        temp_data = data_in.copy()
-        errflag = temp_data.pop('page', '404')
-        if errflag == '404':
-            errflag = temp_data.pop('pageSize', '404')
-        # _, detail_df = self._base_query_rewardPointDetail(data_in=temp_data)
+                      "bd_psndoc.enablestate =2", "edu.lasteducation='Y'" ]
+        # temp_data = data_in.copy()
+        # errflag = temp_data.pop('page', '404')
+        # if errflag == '404':
+        #     errflag = temp_data.pop('pageSize', '404')
+        # # _, detail_df = self._base_query_rewardPointDetail(data_in=temp_data)
         if data_in.get('name'):  # 姓名
             query_item.append(f"bd_psndoc.name='{data_in.get('name')}'")
         if data_in.get('jobid'):
             query_item.append(f"bd_psndoc.name='{data_in.get('jobid')}'")
-        query_sql = " where " + ' and '.join(query_item)
+        # 分页
         if data_in.get('pageSize') and data_in.get('page'):
             maninfo_base_sql = '''
             select * 
@@ -184,7 +195,8 @@ class RewardPointInterface:
             {0[0]}
             ) temptable
             where temptable.rowno >{0[1]}*({0[2]}-1)'''
-            sql_item = [query_sql, data_in.get('pageSize'), data_in.get('page')]
+            query_item.append(f"rownum<={data_in.get('pageSize')}*{data_in.get('page')}")
+            sql_item = [" where " + ' and '.join(query_item), data_in.get('pageSize'), data_in.get('page')]
         else:
             maninfo_base_sql = '''
             select  
@@ -197,14 +209,14 @@ class RewardPointInterface:
             left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
             left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle {0[0]}
             '''
-            sql_item = [query_sql]
+            sql_item = [" where " + ' and '.join(query_item)]
         maninfo_sql = maninfo_base_sql.format(sql_item)
         print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
         maninfo_df = maninfo_df.reindex(columns=(
-            '姓名', '工号', '职称', '学历', '学校', '现有A分', '现有管理积分', '固定积分', '年度管理积分',
-            '年度累计积分', '总获得A分', '总获得管理积分', '总累计积分',
-            '学历积分', '职称积分', '工龄积分', '职务积分'))
+            '姓名', '工号', '职称', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
+        # 计算数据长度
+        totalLength=pd.read_sql(sql=length_base_sql,con=self.db_nc).loc[0,'RES']
         all_id = maninfo_df['工号'].tolist()
         tempidlist = []
         for _ii in all_id:
@@ -212,16 +224,30 @@ class RewardPointInterface:
         all_id_tupe = ','.join(tempidlist)
         # A 管理分表
         mssql_base_sql = '''
-        select
-        dt.JobId,dt.BonusPoints,dt.MinusPoints,dt.ChangeType,dt.ChangeAmount,dt.IsAccounted,a.Name as 积分类型
-        from
-        RewardPointDB.dbo.RewardPointsDetail dt
-        join RewardPointDB.dbo.RewardPointsType a on dt.RewardPointsTypeID=a.RewardPointsTypeID 
+select dt.JobId,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=0 then dt.MinusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=1 then dt.ChangeAmount else 0 end)+
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=2 then dt.ChangeAmount else 0 end) as 现有A分,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=1 then dt.ChangeAmount else 0 end)+
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=2 then dt.ChangeAmount else 0 end) as 现有管理积分,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'{0[0]}' then dt.BonusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'{0[0]}' then dt.MinusPoints else 0 end) as 年度管理积分,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得A分,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得管理积分
+from RewardPointDB.dbo.RewardPointsDetail dt
+where {0[1]}
+group by dt.JobId
         '''
-        mssql_query_item = ['dt.DataStatus=0', 'a.DataStatus=0', ]
-        mssql_sql = mssql_base_sql + " where " + ' and '.join(mssql_query_item)
+        sql_item = [datetime_string(datetime.datetime(year=today.year - 1, month=12, day=31)), ]
+        query_item = ['dt.DataStatus=0', f"dt.JobId in ({all_id_tupe})"]
+        sql_item.append(' and '.join(query_item))
+        mssql_sql = mssql_base_sql.format(sql_item)
+        print('mssql:', mssql_sql)
         pointdetail = pd.read_sql(mssql_sql, self.db_mssql)
-
+        maninfo_df = pd.merge(maninfo_df, pointdetail, left_on='工号', right_on='JobId', how='left')
         #  工龄表
         ServingAge_base_sql = '''
         select bd_psndoc.code,
@@ -271,40 +297,7 @@ class RewardPointInterface:
         # 填充
         for i in maninfo_df.index:
             man = maninfo_df.loc[i, '工号']
-            #  现有A分
-            man_select = pointdetail['JobId'] == man
-            # accounted_select = man_select & pointdetail['IsAccounted'] == 1
-            unaccounted_select = man_select & pointdetail['IsAccounted'] == 0
-            BonusPoints, MinusPoints = pointdetail.loc[
-                (pointdetail['积分类型'] == 'A分') & unaccounted_select, ['BonusPoints', 'MinusPoints']].sum(
-                axis=0)
-            ChangeAmount = pointdetail.loc[
-                (pointdetail['积分类型'] == 'A分') & (
-                        pointdetail['ChangeType'] == 1) & unaccounted_select, 'ChangeAmount'].sum(
-                axis=0)  # 兑换
-            returnAmount = pointdetail.loc[
-                (pointdetail['积分类型'] == 'A分') & (
-                        pointdetail['ChangeType'] == 2) & unaccounted_select, 'ChangeAmount'].sum(
-                axis=0)  # 退回
-            maninfo_df.loc[i, '现有A分'] = BonusPoints - MinusPoints - ChangeAmount + returnAmount
-            maninfo_df.loc[i, '总获得A分'] = pointdetail.loc[(pointdetail['积分类型'] == 'A分') & man_select, 'BonusPoints'].sum(axis=0)
-            #  现有管理积分
-            manageBonusPoints, manageMinusPoints = pointdetail.loc[
-                (pointdetail['积分类型'] == '管理积分') & unaccounted_select, ['BonusPoints', 'MinusPoints']].sum(axis=0)
-            manageChangeAmount = pointdetail.loc[
-                (pointdetail['积分类型'] == '管理积分') & (
-                        pointdetail['ChangeType'] == 1) & unaccounted_select, 'ChangeAmount'].sum(
-                axis=0)  # 兑换
-            returnmanageAmount = pointdetail.loc[
-                (pointdetail['积分类型'] == '管理积分') & (
-                        pointdetail['ChangeType'] == 2) & unaccounted_select, 'ChangeAmount'].sum(
-                axis=0)  # 退回
-            maninfo_df.loc[
-                i, '现有管理积分'] = manageBonusPoints - manageMinusPoints - manageChangeAmount + returnmanageAmount
-            maninfo_df.loc[i, '总获得管理积分'] = pointdetail.loc[
-                (pointdetail['积分类型'] == '管理积分') & man_select, 'BonusPoints'].sum(axis=0)
-            # 年度
-            #  学历积分
+            # 学历积分
             SchoolPoints = 0
             if len(self.rewardPointStandard.loc[
                        self.rewardPointStandard['CheckItem'] == maninfo_df.loc[i, '学历'], 'PointsAmount']) == 1:
@@ -312,7 +305,7 @@ class RewardPointInterface:
                     self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount'].values[0]
                 if maninfo_df.loc[0, '学历'] == '本科' and maninfo_df.loc[0, '学校'] in self.HighSchoolList:
                     SchoolPoints += 500
-            maninfo_df.loc[i, '学历积分'] = SchoolPoints
+            # maninfo_df.loc[i, '学历积分'] = SchoolPoints
             # 职称积分
             TittlePoints = 0  # 这个还没做
             # maninfo_df.loc[i, '职称积分'] = TittlePoints
@@ -325,7 +318,7 @@ class RewardPointInterface:
             years, months = sub_datetime_Bydayone(beginDate=serving_begindate,
                                                   endDate=datetime.datetime(year=today.year, month=12, day=30))
             ServingAgePoints = int((years + months / 12) * 2000)
-            maninfo_df.loc[i, '工龄积分'] = ServingAgePoints
+            # maninfo_df.loc[i, '工龄积分'] = ServingAgePoints
             # 职务积分
             jobrankpoint = 0  #
             man_workinfo = jobrank_df.loc[jobrank_df['CODE'] == man, :].reset_index()  # 取个人的工作信息
@@ -352,8 +345,27 @@ class RewardPointInterface:
                     if len(man_workinfo.loc[_index, '职等']) == 1:
                         temp_standard = man_workinfo.loc[_index, '职等']
                     jobrankpoint += int(temp_standard * (months + years * 12))
-            maninfo_df.loc[i, '职务积分'] = jobrankpoint
+            # maninfo_df.loc[i, '职务积分'] = jobrankpoint
             maninfo_df.loc[i, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
+            # 年度固定积分
+            year_SchoolPoints, year_TittlePoints, year_ServingAgePoints, year_jobrankpoint = 0, 0, 0, 0
+            if serving_begindate.year >= today.year:
+                year_SchoolPoints = SchoolPoints
+                year_ServingAgePoints = ServingAgePoints
+            else:
+                year_ServingAgePoints = 2000
+            maninfo_df.loc[i, '总累计积分'] = maninfo_df.loc[i, '固定积分'] + maninfo_df.loc[i, '总获得管理积分']
+            maninfo_df.loc[
+                i, '年度累计积分'] = year_SchoolPoints + year_TittlePoints + year_ServingAgePoints + year_jobrankpoint + \
+                               maninfo_df.loc[i, '总获得管理积分']
+        return totalLength,maninfo_df
+
+    def query_RewardPointSummary(self, data_in: dict):
+        return self._base_query_RewardPointSummary(data_in)
+
+    def export_RewardPointSummary(self, data_in: dict):
+        _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
+        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
 
     def query_B_rewardPointDetail(self, data_in: dict) -> dict:
         today = datetime.datetime.today()  # 今天
@@ -762,4 +774,6 @@ if __name__ == "__main__":
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
-    print(worker._base_query_rewardPointDetail_Full(data_in={"page": 1, "pageSize": 10}))
+    print(worker.query_RewardPointSummary(data_in={
+        "page": 1, "pageSize": 10
+    }))

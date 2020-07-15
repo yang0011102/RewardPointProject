@@ -84,6 +84,26 @@ def dispatcher(selector, data, files=None):
                 _response = {"code": 106, "msg": "缺少参数"}
             else:
                 _response = {"code": 0, "msg": ""}
+    elif selector == "query_RewardPointSummary":
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_RewardPointSummary,
+                                                                    'check_exist': check_query_RewardPointSummary,
+                                                                    })
+        if flag:
+            totalLength, res_df = worker.query_RewardPointSummary(data_in=data)
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": {"totalLength": totalLength,
+                                  "detail": df_tolist(res_df), }
+                         }
+    elif selector == "export_RewardPointSummary":
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_export_RewardPointSummary,
+                                                                    'check_exist': check_export_RewardPointSummary},
+                                    )
+        if flag:
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": worker.export_RewardPointSummary(data_in=data),
+                         }
     elif selector == "import_goods":
         flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_import_goods,
                                                                     'check_exist': check_import_goods,
