@@ -11,4 +11,4 @@ _response = requests.post(url="http://192.168.40.229:8080/Interface/query_Reward
                           )
 
 
-print(_response.json())
+print(_response.elapsed)
