@@ -99,19 +99,7 @@ class OrderInterface:
 
     #查询订单列表
     def getOrderList(self, data_in: dict):
-        JobId = data_in.get("Operator")
-        OrderStatus = data_in.get("OrderStatus")
-        print(OrderStatus)
-        print(JobId)
-        sql = '''SELECT * FROM PointOrder po WHERE po.DataStatus = 0'''
-
-        if JobId != 0:
-            sql = sql + ''' AND po.JobId = %s''' % (JobId)
-        if OrderStatus != None:
-            sql = sql+''' AND po.OrderStatus = %s'''%(OrderStatus)
-        print(sql)
-        res = pd.read_sql(sql=sql, con=self.db_mssql)
-        return df_tolist(res)
+        pass
     # 查看订单详情
     # 确定订单
     def confirmOrder(self, data_in:dict):
