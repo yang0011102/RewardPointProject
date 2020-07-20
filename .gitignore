@@ -4,4 +4,6 @@
 /venv
 /tool
 __pycache__/
-.idea/
+/.idea
+/log
+/static
