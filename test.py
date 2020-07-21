@@ -1,19 +1,25 @@
 # utf-8
+import os
+os.environ['ORACLE_HOME']="/home/yy/Project/ORACLE/instantclient_11_2"
+os.environ['LD_LIBRARY_PATH']="/home/yy/Project/ORACLE/instantclient_11_2"
 
-from Interface import *
-from config.dbconfig import *
+# from Interface import *
+from config.dbconfig import ncdb as ncDbInfo
+import pandas as pd
+import cx_Oracle
 
+import numpy as np
 # from tool.tool import *
 # db_mssql = pymssql.connect(**mssqldb)
 # temp_sql = "create table #nameCode(name varchar(50),code int, );"  # 创建一个临时表，用于存放从NC中读取的姓名-工号信息
 # temp_insert = "INSERT INTO #nameCode (name, code) SELECT t.name,t.code FROM (VALUES {}) AS t(name,code);"
-name_df = pd.DataFrame([['1', '111'], ['1', '222'], ['2', '333'], ['1', '444']],
-                       columns=('name', 'code'))
-ddd  = name_df.loc[name_df['name']=='1',:].reset_index()
-
-ccc=name_df.loc[name_df['name']=='2',:].reset_index()
-print(ddd.index,'\n',ccc.index)
-print(1)
+# name_df = pd.DataFrame([['1', '111'], ['1', '222'], ['2', '333'], ['1', '444']],
+#                        columns=('name', 'code'))
+# ddd  = name_df.loc[name_df['name']=='1',:].reset_index()
+#
+# ccc=name_df.loc[name_df['name']=='2',:].reset_index()
+# print(ddd.index,'\n',ccc.index)
+# print(222)
 # data_in={'isAccounted': 0, 'page': 0, 'pageSize': 10, 'rewardPointsType': 'A分'}
 # gg = name_df.loc[name_df['name']=='2',:]
 # print(gg)
@@ -43,3 +49,9 @@ print(1)
 #                    endDate=datetime.datetime(year=2020, month=1, day=1)))
 # print(sub_datetime_Bydayone(beginDate=datetime.datetime(year=2020, month=5, day=2),
 #                             endDate=datetime.datetime(year=2020, month=12, day=30)))
+print(f'{ncDbInfo["user"]}/{ncDbInfo["password"]}@{ncDbInfo["host"]}:{ncDbInfo["port"]}/{ncDbInfo["db"]}')
+conn=cx_Oracle.connect(
+            f'{ncDbInfo["user"]}/{ncDbInfo["password"]}@{ncDbInfo["host"]}:{ncDbInfo["port"]}/{ncDbInfo["db"]}',
+            encoding="UTF-8", nencoding="UTF-8")
+print(pd.read_sql(con=conn,sql="select * from v$version"))
+

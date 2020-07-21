@@ -50,31 +50,9 @@ def _inferface(selector):
     return _response
 
 
-@app.route('/Interface/test', methods=['POST'])
+@app.route('/Interface/test', methods=['GET'])
 def __ttt():
-    print("GOT")
-    data = request.form.to_dict()
-    print("Data is:", data)
-    file = request.files.get('file')
-    if file:
-        print("Got a file: ", file)
-    else:
-        print("file is:", file)
-    df = pd.DataFrame(data=[[1, 2, 3], [4, 5, 6], [7, 8, 9]], columns=('column1', 'column2', 'column3'),
-                      index=('rowA', 'rowB', 'rowC'))
-    rrrr = [1, 2, 'wang', 4]
-    # return {"data": df.to_json(orient='records', force_ascii=False), }
-    return {"data": json.dumps(df_tolist(df)), }
-    # return json.dumps({"d": rrrr})
+    time.sleep(30)
+    return "hello"
 
 
-@app.route('/Interface/testfile', methods=['POST'])
-def __tttfile():
-    print("GOTfile")
-    data = request.form.to_dict()
-    print(data)
-    file = request.files["file"]
-    print(file.stream)
-    temm = pd.read_excel(file.stream)
-    print(temm.columns)
-    return "Got your file"
