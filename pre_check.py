@@ -34,6 +34,10 @@ check_export_rewardPoint = ["Operator"]  # 必填
 pre_account_rewardPoint = {"RewardPointsdetailID": str, "jobid": str, }
 check_account_rewardPoint = []  # 必填
 
+# 查询固定积分明细
+pre_B_RewardPoint = {"jobid": str, }
+check_B_RewardPoint = ["jobid"]  # 必填
+
 # 积分汇总查询
 pre_query_RewardPointSummary = {"name": str, "jobid": int,
                                 "page": int, "pageSize": int, }

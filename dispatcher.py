@@ -109,6 +109,15 @@ def dispatcher(selector, data, files=None):
                          "msg": "",
                          "data": worker.export_RewardPointSummary(data_in=data),
                          }
+    elif selector == "query_B_RewardPoint":
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_B_RewardPoint,
+                                                                    'check_exist': check_B_RewardPoint,
+                                                                    })
+        if flag:
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": worker.query_B_rewardPointDetail(data_in=data)
+                         }
     elif selector == "import_goods":
         flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_import_goods,
                                                                     'check_exist': check_import_goods,
