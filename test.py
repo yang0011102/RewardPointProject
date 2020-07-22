@@ -7,7 +7,7 @@ os.environ['LD_LIBRARY_PATH']="/home/yy/Project/ORACLE/instantclient_11_2"
 from config.dbconfig import ncdb as ncDbInfo
 import pandas as pd
 import cx_Oracle
-
+import dingtalk.client
 import numpy as np
 # from tool.tool import *
 # db_mssql = pymssql.connect(**mssqldb)
