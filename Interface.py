@@ -311,8 +311,9 @@ group by dt.JobId
             TittlePoints = 0  # 这个还没做
             if len(self.rewardPointStandard.loc[
                        self.rewardPointStandard['CheckItem'] == maninfo_df.loc[i, '职称等级'], 'PointsAmount']) > 0:
-                TittlePoints = self.rewardPointStandard.loc[
-                    self.rewardPointStandard['CheckItem'] == maninfo_df.loc[i, '职称等级'], 'PointsAmount'].values[0]
+                TittlePoints = max(self.rewardPointStandard.loc[
+                                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[
+                                           i, '职称等级'], 'PointsAmount'].tolist())
             # maninfo_df.loc[i, '职称积分'] = TittlePoints
             # 工龄积分
             serving_begindate = datetime.datetime.strptime(
@@ -783,6 +784,6 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    # res=worker.query_B_rewardPointDetail(data_in={"jobid": 100236})
-    f,res=worker.query_RewardPointSummary(data_in={"page": 1, "pageSize": 10})
+    res = worker.query_B_rewardPointDetail(data_in={"jobid": 100236})
+    # f, res = worker.query_RewardPointSummary(data_in={"page": 1, "pageSize": 10})
     print(1)
