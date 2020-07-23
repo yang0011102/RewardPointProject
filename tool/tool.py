@@ -2,7 +2,7 @@
 import datetime
 import json
 import time
-
+import pymssql
 import numpy as np
 import pandas as pd
 
@@ -10,7 +10,7 @@ from config.config import DOWNLOAD_FOLDER
 
 
 class MyEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, obj:object):
         if isinstance(obj, np.integer):
             return int(obj)
         elif isinstance(obj, np.floating):
@@ -38,7 +38,7 @@ def str2timestamp(timestring: str, timeType="%Y-%m-%d %H:%M:%S"):
     return time.mktime(time.strptime(timestring, timeType))
 
 
-def time_compare(time1: str, time2: str, timeType):
+def time_compare(time1: str, time2: str, timeType)->bool:
     return str2timestamp(time1, timeType) > str2timestamp(time2, timeType)
 
 

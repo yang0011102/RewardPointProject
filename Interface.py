@@ -126,7 +126,7 @@ class RewardPointInterface:
             sql = base_sql.format(sql_item)
             print("拼SQL:", sql)
             res_df = pd.read_sql(sql=sql, con=self.db_mssql)
-            print("读SQL:\n", res_df.size)
+            # print("读SQL:\n", res_df.size)
             # 计算总行数
             lensql = totalLength_sql + " where " + ' and '.join(query_item)
             print("计算总行数sql:", lensql)
@@ -147,8 +147,8 @@ class RewardPointInterface:
                   "join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
                   "where dt.DataStatus=0 and a.DataStatus=0"
             res_df = pd.read_sql(sql=sql, con=self.db_mssql)
-            print("res_df", res_df)
-        print(totalLength, res_df)
+            # print("res_df", res_df)
+        # print(totalLength, res_df)
         return totalLength, res_df
 
     def _base_query_RewardPointSummary(self, data_in: dict) -> (int, pd.DataFrame):
@@ -653,7 +653,7 @@ group by dt.JobId
                             where 
                             goods.DataStatus=0
                             group by goods.GoodsID) as LockTable on LockTable.GoodsID = goods.GoodsID  
-                            where {0[0]}'''
+                            {0[0]}'''
                 sql_item = [query_sql]
             else:
                 base_sql = '''

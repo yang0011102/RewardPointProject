@@ -1,7 +1,7 @@
 import logging
 
 from flask import Flask, render_template, request, jsonify, Response, send_from_directory
-
+from flask_cors import *
 from config.config import *
 from dispatcher import dispatcher
 from tool.tool import *
@@ -18,15 +18,11 @@ class MyResponse(Response):
 app = Flask(__name__, static_url_path='')
 app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+CORS(app, supports_credentials=True)
 app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xlsx', 'xls'}
 app.config['APPLICATION_ROOT'] = APPLICATION_ROOT
 app.response_class = MyResponse
 logging.basicConfig(filename=f"./log/web.{time.strftime('%Y_%m_%d')}.txt", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
-@app.route('/')
-def _index():
-    return render_template('index.html')
 
 
 @app.route('/2048game')
@@ -45,14 +41,10 @@ def _inferface(selector):
     data = request.form.to_dict()
     if data == {}:
         data = json.loads(request.get_data(as_text=True))
+        print("data is json")
+    print(data)
     file = request.files.get('file')
     _response = json.dumps(dispatcher(selector=selector, data=data, files=file), cls=MyEncoder)
     return _response
-
-
-@app.route('/Interface/test', methods=['GET'])
-def __ttt():
-    time.sleep(30)
-    return "hello"
 
 
