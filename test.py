@@ -13,6 +13,6 @@ from config.dbconfig import *
 # worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 # rrr=worker.query_RewardPointSummary(data_in=data)
 # print("------\n",rrr)
-db_mssql = pymssql.connect(mssqldb)
+db_mssql = pymssql.connect(**mssqldb)
 cc=getChlidType(dbcon=db_mssql)
 print(cc)

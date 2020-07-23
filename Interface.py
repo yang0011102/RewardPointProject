@@ -170,11 +170,6 @@ and edu.lasteducation = 'Y'
         newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
         query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                       "bd_psndoc.enablestate =2", "edu.lasteducation='Y'"]
-        # temp_data = data_in.copy()
-        # errflag = temp_data.pop('page', '404')
-        # if errflag == '404':
-        #     errflag = temp_data.pop('pageSize', '404')
-        # # _, detail_df = self._base_query_rewardPointDetail(data_in=temp_data)
         if data_in.get('name'):  # 姓名
             query_item.append(f"bd_psndoc.name='{data_in.get('name')}'")
         if data_in.get('jobid'):
@@ -227,10 +222,9 @@ and edu.lasteducation = 'Y'
         # A 管理分表
         mssql_base_sql = '''
 select dt.JobId,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=0 then dt.MinusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=1 then dt.ChangeAmount else 0 end)+
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=2 then dt.ChangeAmount else 0 end) as 现有A分,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end)-
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=1 then dt.ChangeAmount else 0 end)+
@@ -769,23 +763,15 @@ group by dt.JobId
         self.db_mssql.commit()
         return True
 
-    def test1(self):
-        begindate = datetime.datetime.strptime("2016-09-26", "%Y-%m-%d")
-        enddate = datetime.datetime.strptime("2017-12-31", "%Y-%m-%d")
-        level = "4级"
-        totalmonth = (enddate.year - begindate.year) * 12 + (enddate.month - begindate.month)
-        print(totalmonth)
-        # date_list = []
-        # for month in range(begindate.month, enddate.month + 1):
-        #     date_list.append(datetime.date(year=today.year - 1, month=month, day=1))
-        # pass
 
 
 if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    f,res=worker.query_rewardPoint(data_in={"page": 1, "pageSize": 10,"rewardPointsType":"B分"})
+    f,res=worker.query_rewardPoint(data_in={"jobid":100297,'isAccounted':0}) #40
+    _,res1=worker.query_RewardPointSummary(data_in={"jobid":100297})
+
     # res = worker.query_B_rewardPointDetail(data_in={"jobid": 100236})
     # f, res = worker.query_RewardPointSummary(data_in={"page": 1, "pageSize": 10})
-    print(1)
+    print(res)
