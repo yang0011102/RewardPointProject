@@ -17,6 +17,7 @@ class RewardPointInterface:
             f'{ncDbInfo["user"]}/{ncDbInfo["password"]}@{ncDbInfo["host"]}:{ncDbInfo["port"]}/{ncDbInfo["db"]}',
             encoding="UTF-8", nencoding="UTF-8")
         self.rewardPointChildType = getChlidType(dbcon=self.db_mssql)
+        # print(self.rewardPointChildType)
         self.rewardPointStandard = pd.read_sql(sql='''SELECT TOP (1000) [RewardPointsStandardID],[RewardPointsTypeID]
               ,[CheckItem],[PointsAmount],[ChangeCycle] FROM [RewardPointDB].[dbo].[RewardPointsStandard]''',
                                                con=self.db_mssql)  # 积分标准表
@@ -77,7 +78,7 @@ class RewardPointInterface:
             if not isEmpty(data_in.get("rewardPointsType")):
                 _rewardPointsType_container = self.rewardPointChildType.get(data_in.get("rewardPointsType"))
                 _rewardPointsType_container.append(data_in.get("rewardPointsType"))
-                rewardPointsType = "\'" + ','.join(_rewardPointsType_container) + "\'"
+                rewardPointsType = "\'" + '\',\''.join(_rewardPointsType_container) + "\'"
                 query_item.append(f"a.Name in ({rewardPointsType})")
             # 判断姓名
             if not isEmpty(data_in.get("name")):
@@ -177,7 +178,7 @@ and edu.lasteducation = 'Y'
         if data_in.get('name'):  # 姓名
             query_item.append(f"bd_psndoc.name='{data_in.get('name')}'")
         if data_in.get('jobid'):
-            query_item.append(f"bd_psndoc.name='{data_in.get('jobid')}'")
+            query_item.append(f"bd_psndoc.code='{data_in.get('jobid')}'")
         # 分页
         if data_in.get('pageSize') and data_in.get('page'):
             maninfo_base_sql = '''
@@ -784,6 +785,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    res = worker.query_B_rewardPointDetail(data_in={"jobid": 100236})
+    f,res=worker.query_rewardPoint(data_in={"page": 1, "pageSize": 10,"rewardPointsType":"B分"})
+    # res = worker.query_B_rewardPointDetail(data_in={"jobid": 100236})
     # f, res = worker.query_RewardPointSummary(data_in={"page": 1, "pageSize": 10})
     print(1)

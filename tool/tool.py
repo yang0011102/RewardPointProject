@@ -19,6 +19,8 @@ class MyEncoder(json.JSONEncoder):
             return obj.tolist()
         elif isinstance(obj, pd.Timestamp):
             return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
+        elif isinstance(obj,bytes):
+            return str(obj,'utf-8')
         else:
             return super(MyEncoder, self).default(obj)
 
@@ -98,7 +100,7 @@ def isVaildDate(date, timeType="%Y-%m-%d %H:%M:%S"):
     except:
         return False
 
-def getChlidType(dbcon) -> dict:
+def getChlidType(dbcon:pymssql.Connection) -> dict:
     '''
     返回所有积分类型的所有子类型
     :param dbcon: MSSQL连接器
@@ -119,7 +121,7 @@ def getChlidType(dbcon) -> dict:
             if len(childID) != 0:
                 childID_list = childID[0].split(',')
                 childName = rewardPointsType_df.loc[
-                    rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'Name'].values
+                    rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'Name'].tolist()
                 childID = rewardPointsType_df.loc[
                     rewardPointsType_df['RewardPointsTypeID'].isin(childID_list), 'ChildrenID'].tolist()
                 _rewardPointsType_container.extend(childName)

@@ -1,6 +1,10 @@
 # utf-8
+'''
+用于selector调度接口
+if else版本的dispatcher
+随着lf 条件的增加可能导致程序运行变慢
+'''
 import os
-
 from Interface import RewardPointInterface
 from InterfaceModules.activity import ActivityInterface
 from InterfaceModules.upload import UploadInterface
@@ -18,7 +22,7 @@ shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 ddWorker = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
-def dispatcher(selector, data, files=None):
+def dispatcher(selector:str, data:dict, files=None):
     '''
     根据selector调度接口
     :param selector:
@@ -207,7 +211,7 @@ def dispatcher(selector, data, files=None):
 
             _response = {"code": 0,
                          "msg": ""
-            }
+                         }
 
         else:
             _response = {
@@ -278,7 +282,7 @@ def dispatcher(selector, data, files=None):
             "code": 0,
             "msg": "",
             "data": {
-                "list":res
+                "list": res
             }
         }
         print(_response)
@@ -342,6 +346,14 @@ def dispatcher(selector, data, files=None):
 
 
 def pre_check(checker: dict, file, data: dict, mustFile=None):
+    '''
+    用于进行数据校验
+    :param checker: 用于检查data内字段
+    :param file: flask接收的文件流
+    :param data: flask接收的数据
+    :param mustFile: 用于输入文件内容检查
+    :return:
+    '''
     if mustFile is None:
         mustFile = {}
     print("进入检查")
