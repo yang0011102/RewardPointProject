@@ -231,7 +231,7 @@ sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=1 th
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=2 then dt.ChangeAmount else 0 end) as 现有管理积分,
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'{0[0]}' then dt.BonusPoints else 0 end)-
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'{0[0]}' then dt.MinusPoints else 0 end) as 年度管理积分,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得A分,
+sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,
 sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得管理积分
 from RewardPointDB.dbo.RewardPointsDetail dt
 where {0[1]}
