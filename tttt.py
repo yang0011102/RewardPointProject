@@ -1,16 +1,17 @@
 # utf-8
 import json
 import requests
-
+import pandas as pd
 head={"Accept":"application/json",
       "Content-Type":"application/json",
       "Origin":"null",
       }
 data_in = {
-    "page": 1, "pageSize": 10}
-_response = requests.post(url="http://192.168.40.161:8080/Interface/query_activity",
+    "page": 1, "pageSize": 3}
+_response = requests.post(url="http://192.168.40.161:8080/Interface/query_goods",
                           data=json.dumps(data_in, ),headers=head
                           )
 
 
 print(_response.json())
+print(pd.DataFrame(_response.json().get('data').get('detail')))

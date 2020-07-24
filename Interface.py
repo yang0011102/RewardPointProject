@@ -18,11 +18,11 @@ class RewardPointInterface:
             encoding="UTF-8", nencoding="UTF-8")
         self.rewardPointChildType = getChlidType(dbcon=self.db_mssql)
         # print(self.rewardPointChildType)
-        self.rewardPointStandard = pd.read_sql(sql='''SELECT TOP (1000) [RewardPointsStandardID],[RewardPointsTypeID]
+        self.rewardPointStandard = pd.read_sql(sql='''SELECT [RewardPointsStandardID],[RewardPointsTypeID]
               ,[CheckItem],[PointsAmount],[ChangeCycle] FROM [RewardPointDB].[dbo].[RewardPointsStandard]''',
                                                con=self.db_mssql)  # 积分标准表
         self.HighSchool = pd.read_sql(
-            "SELECT TOP (1000) [HighSchoolID],[Name],[SchoolProject] FROM [RewardPointDB].[dbo].[HighSchool]",
+            "SELECT [HighSchoolID],[Name],[SchoolProject] FROM [RewardPointDB].[dbo].[HighSchool]",
             con=self.db_mssql)  # 985/211工程表
         self.HighSchoolList = self.HighSchool['Name'].tolist()
 
@@ -34,13 +34,13 @@ class RewardPointInterface:
         self.rewardPointChildType = getChlidType(dbcon=self.db_mssql)
 
     def _set_rewardPointStandard(self):
-        self.rewardPointStandard = pd.read_sql(sql='''SELECT TOP (1000) [RewardPointsStandardID],[RewardPointsTypeID]
+        self.rewardPointStandard = pd.read_sql(sql='''SELECT [RewardPointsStandardID],[RewardPointsTypeID]
                       ,[CheckItem],[PointsAmount],[ChangeCycle] FROM [RewardPointDB].[dbo].[RewardPointsStandard]''',
                                                con=self.db_mssql)  # 积分标准表
 
     def _set_HighSchool(self):
         self.HighSchool = pd.read_sql(
-            "SELECT TOP (1000) [HighSchoolID],[Name],[SchoolProject] FROM [RewardPointDB].[dbo].[HighSchool]",
+            "SELECT TOP [HighSchoolID],[Name],[SchoolProject] FROM [RewardPointDB].[dbo].[HighSchool]",
             con=self.db_mssql)  # 985/211工程表
 
     def _base_query_rewardPointDetail(self, data_in: dict) -> (int, pd.DataFrame):
@@ -121,7 +121,7 @@ class RewardPointInterface:
                                         join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId 
                                         {0[1]}
                                 )as rowTempTable 
-                                WHERE RowNumber > {0[2]}*({0[3]}-1) and RowNumber<{0[2]}*({0[3]}+1)'''
+                                WHERE RowNumber > {0[2]}*({0[3]}-1) and RowNumber<={0[2]}*({0[3]})'''
                 sql_item = [sql_item.copy()[0], query_sql, data_in.get("pageSize"), data_in.get("page")]
             sql = base_sql.format(sql_item)
             print("拼SQL:", sql)
@@ -315,8 +315,8 @@ group by dt.JobId
             serving_count_time = datetime.datetime(year=2014, month=1, day=1)
             if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
                 serving_begindate = serving_count_time
-            years, months = sub_datetime_Bydayone(beginDate=serving_begindate,
-                                                  endDate=datetime.datetime(year=today.year, month=12, day=30))
+            years, months = countTime_NewYear(beginDate=serving_begindate,
+                                              endDate=datetime.datetime(year=today.year, month=12, day=30))
             ServingAgePoints = int((years + months / 12) * 2000)
             # maninfo_df.loc[i, '工龄积分'] = ServingAgePoints
             # 职务积分
@@ -340,11 +340,17 @@ group by dt.JobId
                         continue
                     elif temp_enddate.__ge__(newYearsDay):
                         temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
-                    years, months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
+                    months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
                     temp_standard = 0
-                    if len(man_workinfo.loc[_index, '职等']) == 1:
-                        temp_standard = man_workinfo.loc[_index, '职等']
-                    jobrankpoint += int(temp_standard * (months + years * 12))
+                    jobrank = man_workinfo.loc[_index, '职等']
+                    if len(jobrank) != 0:  # 如果职等字段不为空
+                        temp_standard = 0
+                        if len(self.rewardPointStandard.loc[
+                                   self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount'].values) == 1:
+                            temp_standard = self.rewardPointStandard.loc[
+                                self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
+                                    _index, '职等'], 'PointsAmount'].values[0]
+                    jobrankpoint += int(temp_standard * months)
             # maninfo_df.loc[i, '职务积分'] = jobrankpoint
             maninfo_df.loc[i, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             # 年度固定积分
@@ -360,10 +366,118 @@ group by dt.JobId
                                maninfo_df.loc[i, '总获得管理积分']
         return totalLength, maninfo_df
 
+    def _base_query_goods(self, data_in: dict) -> (int, pd.DataFrame):
+        if data_in:  # 不为空则按照条件查询
+            query_item = ["goods.DataStatus=0"]  # 查询条件
+            # 商品名称
+            if data_in.get("Name"):
+                goodName = "\'" + data_in.get('Name') + "\'"
+                query_item.append(f"goods.Name = {goodName}")
+            # 商品编码
+            if data_in.get("GoodsCode"):
+                query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
+            query_sql = " where " + ' and '.join(query_item)
+            # 分页
+            if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
+                base_sql = '''
+                select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
+                goods.GoodsID,
+                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock
+                from Goods goods
+                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
+                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
+                 {0[0]}
+                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status'''
+                sql_item = [query_sql]
+            else:
+                base_sql = '''
+                select * from
+                (
+                select row_number() over(order by goods.GoodsID asc) as rownumber,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
+                goods.GoodsID,
+                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock
+                from dbo.Goods goods
+                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
+                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
+                {0[0]} 
+                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status) as temptable
+                where rownumber>{0[1]}*({0[2]}-1) and rownumber<={0[1]}*({0[2]}) '''
+                sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
+            # 拼起来
+            sql = base_sql.format(sql_item)
+            print("拼sql", sql)
+            res_df = pd.read_sql(sql=sql, con=self.db_mssql)
+            # 计算总行数
+            totalLength_sql = "select count(GoodsID) as res from [RewardPointDB].[dbo].[Goods] "
+            lensql = totalLength_sql + " where " + ' and '.join(query_item)
+            print("计算总行数sql:", lensql)
+            totalLength = pd.read_sql(sql=lensql, con=self.db_mssql).loc[0, 'res']
+            print("计算总行数:", totalLength)
+        else:
+            sql = "select * from [RewardPointDB].[dbo].[Goods] where DataStatus=0"
+            res_df = pd.read_sql(sql=sql, con=self.db_mssql)
+            # 计算总行数
+            totalLength_sql = "select count(GoodsID) as res from [RewardPointDB].[dbo].[Goods] "
+            print("计算总行数sql:", totalLength_sql)
+            totalLength = pd.read_sql(sql=totalLength_sql, con=self.db_mssql).loc[0, 'res']
+            print("计算总行数:", totalLength)
+
+        return totalLength, res_df
+
+    def _base_query_order(self, data_in: dict) -> (int, pd.DataFrame):
+        query_item = ["PointOrder.DataStatus=0"]
+        if data_in.get("Operator"):
+            query_item.append(f"PointOrder.JobId={data_in.get('Operator')}")
+        if data_in.get("OrderStatus"):
+            query_item.append(f"PointOrder.OrderStatus={data_in.get('OrderStatus')}")
+        query_sql = " where " + ' and '.join(query_item)
+        if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
+            base_sql = '''
+            select PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
+            from PointOrder 
+            left join 
+            openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
+                        left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
+                        left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
+                        left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
+                        where hi_psnjob.endflag =''N'' and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' ')
+                        as NCDB on NCDB.CODE = PointOrder.JobId {0[0]}'''
+            sql_item = [query_sql]
+        else:
+            base_sql = '''
+            select * from
+            (select ROW_NUMBER() OVER (ORDER BY PointOrderID) as rownumber,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME from PointOrder 
+            left join 
+            openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
+                        left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
+                        left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
+                        left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
+                        where hi_psnjob.endflag =''N'' and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' ')
+                        as NCDB on NCDB.CODE = PointOrder.JobId {0[0]}) as temptable 
+                        where rownumber>{0[1]}*({0[2]}-1) and rownumber<={0[1]}*({0[2]})
+            '''
+            sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
+        # 拼起来
+        sql = base_sql.format(sql_item)
+        print("拼sql", sql)
+        res_df = pd.read_sql(sql=sql, con=self.db_mssql)
+        totalLength_sql = "select count(PointOrderID) as res from [RewardPointDB].[dbo].[PointOrder] {0[0]}".format(
+            sql_item)
+        print("计算总行数sql:", totalLength_sql)
+        totalLength = pd.read_sql(sql=totalLength_sql, con=self.db_mssql).loc[0, 'res']
+        return totalLength, res_df
+
+    def _base_query_orderDetail(self, data_in: dict) -> (int, pd.DataFrame):
+        pass
+
     def query_RewardPointSummary(self, data_in: dict) -> (int, pd.DataFrame):
         return self._base_query_RewardPointSummary(data_in)
 
-    def export_RewardPointSummary(self, data_in: dict):
+    def export_RewardPointSummary(self, data_in: dict) -> str:
         _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
 
@@ -433,8 +547,8 @@ group by dt.JobId
         serving_count_time = datetime.datetime(year=2014, month=1, day=1)
         if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
             serving_begindate = serving_count_time
-        years, months = sub_datetime_Bydayone(beginDate=serving_begindate,
-                                              endDate=datetime.datetime(year=today.year, month=12, day=30))
+        years, months = countTime_NewYear(beginDate=serving_begindate,
+                                          endDate=datetime.datetime(year=today.year, month=12, day=30))
         ServingAgePoints = int((years + months / 12) * 2000)
         serving_data['begindate'] = manServing_df.loc[0, 'BEGINDATE']
         serving_data['servingAge_years'] = years
@@ -480,17 +594,17 @@ group by dt.JobId
                 continue
             elif temp_enddate.__ge__(newYearsDay):
                 temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
-            years, months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
+            months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
             temp_jobrankpoint = 0
             jobrank = jobrank_df.loc[_index, '职等']
-            if len(jobrank) == 1:
+            if len(jobrank) != 0:  # 如果职等字段不为空
                 temp_standard = 0
-                if len(self.rewardPointStandard[
-                           self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount']) == 1:
-                    temp_standard = self.rewardPointStandard[
+                if len(self.rewardPointStandard.loc[
+                           self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount'].values) == 1:
+                    temp_standard = self.rewardPointStandard.loc[
                         self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                             _index, '职等'], 'PointsAmount'].values[0]
-                temp_jobrankpoint = int(temp_standard * (months + years * 12))
+                temp_jobrankpoint = int(temp_standard * months)
             jobrank_data.append({'begindate': datetime_string(temp_begindate, timeType="%Y-%m-%d"),
                                  'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
                                  'islatest': islatest,
@@ -608,70 +722,6 @@ group by dt.JobId
             err_flag = True
         return err_flag
 
-    def _base_query_goods(self, data_in: dict) -> (int, pd.DataFrame):
-        if data_in:  # 不为空则按照条件查询
-            query_item = ["goods.DataStatus=0"]  # 查询条件
-            # 商品名称
-            if data_in.get("Name"):
-                goodName = "\'" + data_in.get('Name') + "\'"
-                query_item.append(f"goods.Name = {goodName}")
-            # 商品编码
-            if data_in.get("GoodsCode"):
-                query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
-            query_sql = " where " + ' and '.join(query_item)
-            # 分页
-            if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
-                base_sql = '''
-                select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
-                goods.GoodsID,
-                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as 入库总量,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as 出库总量,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as 锁定总量
-                from Goods goods
-                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
-                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
-                 {0[0]}
-                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status'''
-                sql_item = [query_sql]
-            else:
-                base_sql = '''
-                select * from
-                (
-                select row_number() over(order by goods.GoodsID asc) as rownumber,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
-                goods.GoodsID,
-                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as 入库总量,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as 出库总量,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as 锁定总量
-                from dbo.Goods goods
-                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
-                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
-                {0[0]} 
-                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status) as temptable
-                where rownumber>{0[1]}*({0[2]}-1) and rownumber<{0[1]}*({0[2]}+1) '''
-                sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
-            # 拼起来
-            sql = base_sql.format(sql_item)
-            print("拼sql", sql)
-            res_df = pd.read_sql(sql=sql, con=self.db_mssql)
-            # 计算总行数
-            totalLength_sql = "select count(GoodsID) as res " \
-                              "from [RewardPointDB].[dbo].[Goods] "
-            lensql = totalLength_sql + " where " + ' and '.join(query_item)
-            print("计算总行数sql:", lensql)
-            totalLength = pd.read_sql(sql=lensql, con=self.db_mssql).loc[0, 'res']
-            print("计算总行数:", totalLength)
-        else:
-            sql = "select * from [RewardPointDB].[dbo].[Goods] where DataStatus=0"
-            res_df = pd.read_sql(sql=sql, con=self.db_mssql)
-            # 计算总行数
-            totalLength_sql = "select count(GoodsID) as res " \
-                              "from [RewardPointDB].[dbo].[Goods] "
-            print("计算总行数sql:", totalLength_sql)
-            totalLength = pd.read_sql(sql=totalLength_sql, con=self.db_mssql).loc[0, 'res']
-            print("计算总行数:", totalLength)
-
-        return totalLength, res_df
-
     def query_goods(self, data_in: dict) -> (int, pd.DataFrame):
         return self._base_query_goods(data_in=data_in)
 
@@ -734,15 +784,16 @@ group by dt.JobId
         self.db_mssql.commit()
         return True
 
+    def query_order(self, data_in: dict) -> (int, pd.DataFrame):
+        return self._base_query_order(data_in=data_in)
+
 
 if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    # f, res = worker.query_rewardPoint(
-    #     data_in={"jobid": 100297, 'isAccounted': 0, 'page': 2, "pageSize": 1, "rewardPointsType": "A分"})  # 40
-    # _,res1=worker.query_RewardPointSummary(data_in={"jobid":100297})
-
-    res = worker._base_query_goods(data_in={'page': 2, "pageSize": 1})
-    # f, res = worker.query_RewardPointSummary(data_in={"page": 1, "pageSize": 10})
-    print(res)
+    data = {"jobid": 100016, }
+    res_df = worker.query_B_rewardPointDetail(data_in=data)
+    res_df1 = worker.query_RewardPointSummary(data)
+    print(res_df)
+    print(res_df1)

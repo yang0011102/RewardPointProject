@@ -22,6 +22,7 @@ shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 ddWorker = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
+@verison_warning
 def dispatcher(selector:str, data:dict, files=None):
     '''
     根据selector调度接口

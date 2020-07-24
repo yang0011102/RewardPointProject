@@ -1,28 +1,25 @@
 # utf-8
 import datetime
+import functools
 import json
 import time
 import pymssql
 import numpy as np
 import pandas as pd
-
+from warnings import warn
 from config.config import DOWNLOAD_FOLDER
+import simplejson
 
 
-class MyEncoder(json.JSONEncoder):
-    def default(self, obj:object):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, pd.Timestamp):
-            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
-        elif isinstance(obj,bytes):
-            return str(obj,'utf-8')
-        else:
-            return super(MyEncoder, self).default(obj)
+def verison_warning(func):
+    @functools.wraps(func)
+    def __warning(*args, **kwargs):
+        warn(
+            "This function is outdated. Get in touch with the administrator for information about the new version",
+            DeprecationWarning)
+        return func(*args, **kwargs)
+
+    return __warning
 
 
 def df_tolist(df: pd.DataFrame):
@@ -40,7 +37,7 @@ def str2timestamp(timestring: str, timeType="%Y-%m-%d %H:%M:%S"):
     return time.mktime(time.strptime(timestring, timeType))
 
 
-def time_compare(time1: str, time2: str, timeType)->bool:
+def time_compare(time1: str, time2: str, timeType) -> bool:
     return str2timestamp(time1, timeType) > str2timestamp(time2, timeType)
 
 
@@ -48,6 +45,7 @@ def sub_stringtime(time1: str, time2: str, timeType):
     return str2timestamp(time1, timeType) - str2timestamp(time2, timeType)
 
 
+@verison_warning
 def sub_datetime(beginDate: datetime.datetime, endDate: datetime.datetime) -> (int, int):
     date_byyear = datetime.datetime(year=endDate.year, month=beginDate.month, day=beginDate.day)
     if beginDate.year == endDate.year:
@@ -67,25 +65,71 @@ def sub_datetime(beginDate: datetime.datetime, endDate: datetime.datetime) -> (i
                 months = endDate.month - beginDate.month
         else:  # 纪念日没到
             year = endDate.year - beginDate.year - 1
-            days = 365+(endDate - date_byyear).days
+            days = 365 + (endDate - date_byyear).days
             if endDate.day >= beginDate.day:
-                months = 12+endDate.month - beginDate.month
+                months = 12 + endDate.month - beginDate.month
             else:
-                months = endDate.month - beginDate.month+11
+                months = endDate.month - beginDate.month + 11
     else:
         year, months, days = 0, 0, 0
     return year, months, days
 
-def sub_datetime_Bydayone(beginDate: datetime.datetime, endDate: datetime.datetime) -> (int, int):
-    if beginDate.day > 1:
-        months = endDate.month - beginDate.month
+
+def countTime_NewYear(beginDate: datetime.datetime, endDate: datetime.datetime) -> (int, int):
+    '''
+    每年元旦记为1年,每月1号记为1月
+    :param beginDate:
+    :param endDate:
+    :return:
+    '''
+    if beginDate.year != endDate.year:
+        if beginDate.month == beginDate.month == 1:
+            years = endDate.year - beginDate.year +1
+        else:
+            years = endDate.year - beginDate.year
+        if beginDate.day != 1:
+            month = 12 - beginDate.month
+        else:
+            month = 12 - beginDate.month + 1
     else:
-        months = endDate.month - beginDate.month + 1
-    if beginDate.day == 1 and beginDate.day == 1:
-        year = endDate.year - beginDate.year + 1
+        years = 0
+        if beginDate.day != 1:
+            month = endDate.month - beginDate.month
+        else:
+            month = endDate.month - beginDate.month + 1
+    return years, month
+
+
+def sub_datetime_Bydayone(beginDate: datetime.datetime, endDate: datetime.datetime) -> int:
+    '''
+    计算两个时间间隔多少个月,每月1号计
+    :param beginDate:
+    :param endDate:
+    :return:
+    '''
+    if beginDate.year != endDate.year:
+        years = endDate.year - beginDate.year - 1
+        if beginDate.day != 1:
+            beginMonth = 12 - beginDate.month
+        else:
+            beginMonth = 12 - beginDate.month + 1
+        totalmonth = years * 12 + beginMonth + endDate.month
     else:
-        year = endDate.year - beginDate.year
-    return year, months
+        if beginDate.day != 1:
+            totalmonth = endDate.month - beginDate.month
+        else:
+            totalmonth = endDate.month - beginDate.month + 1
+    return totalmonth
+    # if beginDate.day > 1:
+    #     months = endDate.month - beginDate.month
+    # else:
+    #     months = endDate.month - beginDate.month + 1
+    # if beginDate.month == beginDate.day == 1:
+    #     year = endDate.year - beginDate.year + 1
+    # else:
+    #     year = endDate.year - beginDate.year
+    # return year, months
+
 
 def isVaildDate(date, timeType="%Y-%m-%d %H:%M:%S"):
     '''
@@ -100,7 +144,8 @@ def isVaildDate(date, timeType="%Y-%m-%d %H:%M:%S"):
     except:
         return False
 
-def getChlidType(dbcon:pymssql.Connection) -> dict:
+
+def getChlidType(dbcon: pymssql.Connection) -> dict:
     '''
     返回所有积分类型的所有子类型
     :param dbcon: MSSQL连接器
@@ -129,6 +174,7 @@ def getChlidType(dbcon:pymssql.Connection) -> dict:
                 break
         res[_name] = _rewardPointsType_container
     return res
+
 
 def get_dfUrl(df: pd.DataFrame, Operator: str) -> str:
     filename = Operator + str(time.time()) + ".xlsx"
@@ -164,9 +210,38 @@ def isEmpty(obj):
         return pd.isna(obj)
 
 
-if __name__ == "__main__":
-    fff = pd.DataFrame([[1, 2, 3],
-                        [5, 'hhh', '1'],
-                        ["收", "s", 1]], columns=["第一", "第二", "第三"])
-    print(fff.to_json(orient='records'))
-    print(json.dumps(df_tolist(fff)))
+@verison_warning
+class MyEncoder(json.JSONEncoder):
+    def default(self, obj: object):
+        print("get defalut")
+        if isinstance(obj, float) and np.isnan(obj):
+            print("get nan")
+            return 0
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, pd.Timestamp):
+            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
+        elif isinstance(obj, bytes):
+            return str(obj, 'utf-8')
+        else:
+            return super().default(obj)
+
+
+class SuperEncoder(simplejson.JSONEncoder):
+    def default(self, obj: object):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, pd.Timestamp):
+            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
+        elif isinstance(obj, bytes):
+            return str(obj, 'utf-8')
+        else:
+            return super().default(obj)

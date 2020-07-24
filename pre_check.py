@@ -44,8 +44,8 @@ pre_query_RewardPointSummary = {"name": str, "jobid": int,
 check_query_RewardPointSummary = []  # 必填
 
 # 积分汇总导出
-pre_export_RewardPointSummary={"name": str, "jobid": int,
-                                "page": int, "pageSize": int,"Operator": int }
+pre_export_RewardPointSummary = {"name": str, "jobid": int,
+                                 "page": int, "pageSize": int, "Operator": int}
 check_export_RewardPointSummary = ["Operator"]  # 必填
 
 # 查询商品信息
@@ -66,7 +66,7 @@ pre_export_goods = {"Name": str, "GoodsCode": int, "page": int, "pageSize": int,
 check_export_goods = ["Operator"]  # 必填
 
 # 商品变更
-pre_offShelf_goods = {"GoodsCode": str,"Status":int}
+pre_offShelf_goods = {"GoodsCode": str, "Status": int}
 check_offShelf_goods = ["GoodsCode"]  # 必填
 
 # 上传商品图片
@@ -85,3 +85,7 @@ pre_activity = {
     "CreatedBy": str
 }
 pre_activity_required = ["Title", "PictureUrl", "BeginDateTime", "EndDateTime", "ActivityContent", "CreatedBy"]
+
+# 查询订单
+pre_query_order = {"Operator": str, 'OrderStatus': str, "page": int, "pageSize": int}
+check_query_order = []  # 必填

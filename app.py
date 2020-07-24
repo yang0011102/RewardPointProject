@@ -1,9 +1,10 @@
+#utf-8
 import logging
 
 from flask import Flask, render_template, request, jsonify, Response, send_from_directory
 from config.config import *
 from flask_cors import CORS
-from dispatcher import dispatcher
+from dispatcher_switch import dispatcher
 from tool.tool import *
 
 
@@ -44,7 +45,10 @@ def _inferface(selector):
         print("data is json")
     print(data)
     file = request.files.get('file')
-    _response = json.dumps(dispatcher(selector=selector, data=data, files=file), cls=MyEncoder)
+    _response = simplejson.dumps(dispatcher(selector=selector, data=data, files=file), cls=SuperEncoder,ignore_nan=True)
     return _response
+
+if __name__ =="__main__":
+    app.run(host="127.0.0.1",port="5000")
 
 
