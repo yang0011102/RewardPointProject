@@ -2,6 +2,7 @@ import logging
 
 from flask import Flask, render_template, request, jsonify, Response, send_from_directory
 from config.config import *
+from flask_cors import CORS
 from dispatcher import dispatcher
 from tool.tool import *
 
@@ -15,6 +16,7 @@ class MyResponse(Response):
 
 
 app = Flask(__name__, static_url_path='')
+CORS(app, supports_credentials=True)  # FLASK跨域
 app.jinja_env.auto_reload = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xlsx', 'xls'}

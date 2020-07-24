@@ -110,20 +110,19 @@ class RewardPointInterface:
                 sql_item = [sql_item[0], query_sql]
             else:
                 print("分页")
-                base_sql = '''SELECT TOP {0[0]} * FROM( 
+                base_sql = '''SELECT * FROM( 
                                 SELECT ROW_NUMBER() OVER (ORDER BY RewardPointsDetailID) AS RowNumber, 
                                    dt.RewardPointsdetailID,dt.DepartmentLv1,dt.DepartmentLv2, 
                                       dt.DepartmentLv3,dt.FunctionalDepartment,dt.Submit,NCDB.NAME as Name,dt.Post, 
-                                         a.Name as 积分类型,{0[1]},dt.ChangeType,dt.ChangeAmount,dt.Reason,dt.Proof,
+                                         a.Name as 积分类型,{0[0]},dt.ChangeType,dt.ChangeAmount,dt.Reason,dt.Proof,
                                             dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted  
                                         FROM RewardPointDB.dbo.RewardPointsDetail dt 
                                         join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID 
                                         join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId 
-                                        {0[2]}
+                                        {0[1]}
                                 )as rowTempTable 
-                                WHERE RowNumber > {0[3]}*({0[4]}-1)'''
-                sql_item = [data_in.get("pageSize"), sql_item.copy()[0],
-                            query_sql, data_in.get("pageSize"), data_in.get("page")]
+                                WHERE RowNumber > {0[2]}*({0[3]}-1) and RowNumber<{0[2]}*({0[3]}+1)'''
+                sql_item = [sql_item.copy()[0], query_sql, data_in.get("pageSize"), data_in.get("page")]
             sql = base_sql.format(sql_item)
             print("拼SQL:", sql)
             res_df = pd.read_sql(sql=sql, con=self.db_mssql)
@@ -611,7 +610,7 @@ group by dt.JobId
 
     def _base_query_goods(self, data_in: dict) -> (int, pd.DataFrame):
         if data_in:  # 不为空则按照条件查询
-            query_item = ["DataStatus=0"]  # 查询条件
+            query_item = ["goods.DataStatus=0"]  # 查询条件
             # 商品名称
             if data_in.get("Name"):
                 goodName = "\'" + data_in.get('Name') + "\'"
@@ -624,60 +623,32 @@ group by dt.JobId
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
                 base_sql = '''
                 select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
-                InOutTable.出库总量,InOutTable.入库总量,LockTable.锁定总量
-                from dbo.Goods goods
-                join (
-                    select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,
-                    goods.Status,InOutTable.出库总量,InOutTable.入库总量,LockTable.锁定总量
-                    from dbo.Goods goods
-                    left join (
-                            select
-                            goods.GoodsID,sum(stkin.ChangeAmount) as 入库总量, sum(stkout.ChangeAmount) as 出库总量
-                            from dbo.Goods goods
-                            left join (select ChangeAmount,GoodsID from dbo.StockInDetail where DataStatus=0 and ChangeType=0) stkin on stkin.GoodsID = goods.GoodsID
-                            left join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
-                            where 
-                            goods.DataStatus=0
-                            group by goods.GoodsID
-                            ) as InOutTable on InOutTable.GoodsID = goods.GoodsID
-                    left join (
-                            select
-                            goods.GoodsID,sum(stkout.ChangeAmount) as 锁定总量
-                            from dbo.Goods goods
-                            join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
-                            where 
-                            goods.DataStatus=0
-                            group by goods.GoodsID) as LockTable on LockTable.GoodsID = goods.GoodsID  
-                            {0[0]}'''
+                goods.GoodsID,
+                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as 入库总量,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as 出库总量,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as 锁定总量
+                from Goods goods
+                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
+                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
+                 {0[0]}
+                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status'''
                 sql_item = [query_sql]
             else:
                 base_sql = '''
-                select top {0[0]} * from (
-                    select row_number() over(order by goods.GoodsID asc) as rownumber, goods.GoodsCode,
-                    goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,InOutTable.出库总量,InOutTable.入库总量,LockTable.锁定总量
-                    from dbo.Goods goods
-                    left join (
-                            select
-                            goods.GoodsID,sum(stkin.ChangeAmount) as 入库总量, sum(stkout.ChangeAmount) as 出库总量
-                            from dbo.Goods goods
-                            left join (select ChangeAmount,GoodsID from dbo.StockInDetail where DataStatus=0 and ChangeType=0) stkin on stkin.GoodsID = goods.GoodsID
-                            left join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
-                            where 
-                            goods.DataStatus=0
-                            group by goods.GoodsID
-                            ) as InOutTable on InOutTable.GoodsID = goods.GoodsID
-                    left join (
-                            select
-                            goods.GoodsID,sum(stkout.ChangeAmount) as 锁定总量
-                            from dbo.Goods goods
-                            join (select ChangeAmount,GoodsID from dbo.StockOutDetail where DataStatus=0 and ChangeType=0) stkout on stkout.GoodsID = goods.GoodsID
-                            where 
-                            goods.DataStatus=0
-                            group by goods.GoodsID
-                            ) as LockTable on LockTable.GoodsID = goods.GoodsID {0[1]}
-                ) temp_row where rownumber > {0[2]}*({0[3]}-1)
-                '''
-                sql_item = [data_in.get("pageSize"), query_sql, data_in.get("pageSize"), data_in.get("page")]
+                select * from
+                (
+                select row_number() over(order by goods.GoodsID asc) as rownumber,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
+                goods.GoodsID,
+                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as 入库总量,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as 出库总量,
+                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as 锁定总量
+                from dbo.Goods goods
+                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
+                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
+                {0[0]} 
+                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status) as temptable
+                where rownumber>{0[1]}*({0[2]}-1) and rownumber<{0[1]}*({0[2]}+1) '''
+                sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
             # 拼起来
             sql = base_sql.format(sql_item)
             print("拼sql", sql)
@@ -764,14 +735,14 @@ group by dt.JobId
         return True
 
 
-
 if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    f,res=worker.query_rewardPoint(data_in={"jobid":100297,'isAccounted':0}) #40
-    _,res1=worker.query_RewardPointSummary(data_in={"jobid":100297})
+    # f, res = worker.query_rewardPoint(
+    #     data_in={"jobid": 100297, 'isAccounted': 0, 'page': 2, "pageSize": 1, "rewardPointsType": "A分"})  # 40
+    # _,res1=worker.query_RewardPointSummary(data_in={"jobid":100297})
 
-    # res = worker.query_B_rewardPointDetail(data_in={"jobid": 100236})
+    res = worker._base_query_goods(data_in={'page': 2, "pageSize": 1})
     # f, res = worker.query_RewardPointSummary(data_in={"page": 1, "pageSize": 10})
     print(res)

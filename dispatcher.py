@@ -149,7 +149,7 @@ def dispatcher(selector:str, data:dict, files=None):
             totalLength, res_df = worker.query_goods(data_in=data)
             _response = {"code": 0,
                          "msg": "",
-                         "data": {"total": totalLength, "detail": res_df.to_json(orient='records', force_ascii=False)}
+                         "data": {"total": totalLength, "detail": df_tolist(res_df)}
                          }
     elif selector == "export_goods":
         flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_export_goods,
