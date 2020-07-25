@@ -252,7 +252,7 @@ group by dt.JobId
         where
         hi_psnjob.ismainjob ='Y' 
         and bd_psndoc.enablestate =2
-        and (hi_psnjob.enddate>'2018-01-01' or hi_psnjob.endflag='N')
+        and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N')
         and bd_psndoc.code in ({})
         group by bd_psndoc.code 
                     '''
@@ -300,7 +300,6 @@ group by dt.JobId
                     self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount'].values[0]
                 if maninfo_df.loc[0, '学历'] == '本科' and maninfo_df.loc[0, '学校'] in self.HighSchoolList:
                     SchoolPoints += 500
-            # maninfo_df.loc[i, '学历积分'] = SchoolPoints
             # 职称积分
             TittlePoints = 0  # 这个还没做
             if len(self.rewardPointStandard.loc[
@@ -308,7 +307,6 @@ group by dt.JobId
                 TittlePoints = max(self.rewardPointStandard.loc[
                                        self.rewardPointStandard['CheckItem'] == maninfo_df.loc[
                                            i, '职称等级'], 'PointsAmount'].tolist())
-            # maninfo_df.loc[i, '职称积分'] = TittlePoints
             # 工龄积分
             serving_begindate = datetime.datetime.strptime(
                 manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
@@ -318,7 +316,6 @@ group by dt.JobId
             years, months = countTime_NewYear(beginDate=serving_begindate,
                                               endDate=datetime.datetime(year=today.year, month=12, day=30))
             ServingAgePoints = int((years + months / 12) * 2000)
-            # maninfo_df.loc[i, '工龄积分'] = ServingAgePoints
             # 职务积分
             jobrankpoint = 0  #
             man_workinfo = jobrank_df.loc[jobrank_df['CODE'] == man, :].reset_index()  # 取个人的工作信息
@@ -351,7 +348,6 @@ group by dt.JobId
                                 self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                                     _index, '职等'], 'PointsAmount'].values[0]
                     jobrankpoint += int(temp_standard * months)
-            # maninfo_df.loc[i, '职务积分'] = jobrankpoint
             maninfo_df.loc[i, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             # 年度固定积分
             year_SchoolPoints, year_TittlePoints, year_ServingAgePoints, year_jobrankpoint = 0, 0, 0, 0
@@ -559,10 +555,11 @@ group by dt.JobId
         jobrank_base_sql = '''
         select 
         hi_psnjob.begindate,hi_psnjob.enddate,
-        om_jobrank.jobrankname as 职等
+        om_jobrank.jobrankname as 职等,om_job.jobname
         from hi_psnjob
-        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+        join bd_psndoc on hi_psnjob.pk_psndoc = bd_psndoc.pk_psndoc
         join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
+        join om_job on om_job.pk_job = hi_psnjob.pk_job 
         where
         hi_psnjob.ismainjob ='Y' 
         and bd_psndoc.enablestate =2
@@ -578,7 +575,6 @@ group by dt.JobId
         if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
             jobrank_begindate = jobrank_count_time
         jobrank_df.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
-
         for _index in jobrank_df.index:
             if pd.isna(jobrank_df.loc[_index, 'ENDDATE']):
                 temp_enddate = today
@@ -609,6 +605,7 @@ group by dt.JobId
                                  'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
                                  'islatest': islatest,
                                  'jobrank': jobrank,
+                                 'jobname':jobrank_df.loc[_index, 'JOBNAME'],
                                  'jobrankpoint': temp_jobrankpoint})
 
         # 存起来

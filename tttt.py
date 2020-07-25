@@ -7,8 +7,8 @@ head={"Accept":"application/json",
       "Origin":"null",
       }
 data_in = {
-    "page": 1, "pageSize": 3}
-_response = requests.post(url="http://192.168.40.161:8080/Interface/query_goods",
+    "page": 1, "pageSize": 6}
+_response = requests.post(url="http://192.168.40.161:8080/Interface/query_B_rewardPointDetail",
                           data=json.dumps(data_in, ),headers=head
                           )
 

@@ -2,5 +2,8 @@
 import datetime
 from tool.tool import *
 
-print(sub_datetime_Bydayone(beginDate=datetime.datetime(year=2018,month=1,day=1), endDate=datetime.datetime(year=2019,month=12,day=31)))
-print(countTime_NewYear(beginDate=datetime.datetime(year=2015,month=7,day=1), endDate=datetime.datetime(year=2020,month=7,day=24)))
+L={'工号': 100016,
+   '学历积分': {'schoolPoints': 1000, 'education': '本科', 'is985211': False},
+   '职称积分': {'tectittle': '二级人力资源管理师', 'tittleRank': '中级', 'tittleRankPoint': 0},
+   '工龄积分': {'begindate': '2015-07-01', 'servingAge_years': 5, 'servingAge_months': 6, 'servingAgePoints': 11000},
+   '职务积分': [{'begindate': '2018-01-01', 'enddate': '2019-12-31', 'islatest': False, 'jobrank': '6级', 'jobname': '部门经理', 'jobrankpoint': 9600}]}
