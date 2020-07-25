@@ -89,3 +89,7 @@ pre_activity_required = ["Title", "PictureUrl", "BeginDateTime", "EndDateTime", 
 # 查询订单
 pre_query_order = {"Operator": str, 'OrderStatus': str, "page": int, "pageSize": int}
 check_query_order = []  # 必填
+
+# 查询订单详情
+pre_query_orderDetail = {"PointOrderID": str}
+check_query_orderDetail = ["PointOrderID"]  # 必填

@@ -395,6 +395,15 @@ def dispatcher(selector, data, files=None):
                          }
         return _response
 
+    def query_orderDetail():
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_orderDetail,
+                                                                    'check_exist': check_query_orderDetail,
+                                                                    })
+        if flag:
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": worker.query_orderDetail(data_in=data)}
+
     switch = {"query_rewardPoint": query_rewardPoint, "import_rewardPoint": import_rewardPoint,
               "delete_rewardPoint": delete_rewardPoint, "export_rewardPoint": export_rewardPoint,
               "account_rewardPoint": account_rewardPoint, "query_RewardPointSummary": query_RewardPointSummary,
@@ -405,7 +414,8 @@ def dispatcher(selector, data, files=None):
               "delete_activity": delete_activity, "add_cart": add_cart, "query_cart": query_cart,
               "edit_cart_num": edit_cart_num, "create_order": create_order, "query_order": query_order,
               "confirm_order": confirm_order, "reject_order": reject_order, "finish_order": finish_order,
-              "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage}
+              "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage,
+              "query_orderDetail": query_orderDetail}
     if switch.get(selector):
         return switch.get(selector)()
     else:

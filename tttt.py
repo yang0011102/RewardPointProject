@@ -6,9 +6,8 @@ head={"Accept":"application/json",
       "Content-Type":"application/json",
       "Origin":"null",
       }
-data_in = {
-    "page": 1, "pageSize": 6}
-_response = requests.post(url="http://192.168.40.161:8080/Interface/query_B_rewardPointDetail",
+data_in = {'jobid':'100297'}
+_response = requests.post(url="http://192.168.40.161:8080/Interface/query_B_RewardPoint",
                           data=json.dumps(data_in, ),headers=head
                           )
 

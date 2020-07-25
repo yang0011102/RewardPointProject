@@ -433,7 +433,8 @@ group by dt.JobId
         query_sql = " where " + ' and '.join(query_item)
         if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
             base_sql = '''
-            select PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
+            select PointOrder.PointOrderID,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
+            PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
             from PointOrder 
             left join 
             openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
@@ -446,7 +447,9 @@ group by dt.JobId
         else:
             base_sql = '''
             select * from
-            (select ROW_NUMBER() OVER (ORDER BY PointOrderID) as rownumber,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME from PointOrder 
+            (select ROW_NUMBER() OVER (ORDER BY PointOrderID) as rownumber,PointOrder.PointOrderID,PointOrder.JobId,
+            PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
+            from PointOrder 
             left join 
             openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
                         left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
@@ -467,8 +470,20 @@ group by dt.JobId
         totalLength = pd.read_sql(sql=totalLength_sql, con=self.db_mssql).loc[0, 'res']
         return totalLength, res_df
 
-    def _base_query_orderDetail(self, data_in: dict) -> (int, pd.DataFrame):
-        pass
+    def _base_query_orderDetail(self, data_in: dict) -> pd.DataFrame:
+        query_item = ['ordergoods.DataStatus=0']
+        orderID = data_in.get('PointOrderID')
+        query_item.append(f"orders.PointOrderID in ({orderID})")
+        _base_sql = '''
+        select orders.PointOrderID,goods.PictureUrl,goods.GoodsCode,goods.Status,goods.Name,goods.PointCost,
+        ordergoods.OrderGoodsAmount
+        from RewardPointDB.dbo.PointOrderGoods as ordergoods 
+        join RewardPointDB.dbo.PointOrder as orders on orders.PointOrderID=ordergoods.PointOrderID
+        join RewardPointDB.dbo.Goods as goods on goods.GoodsID=ordergoods.GoodsID {}'''
+        sql = _base_sql.format(" where " + " and ".join(query_item))
+        print(sql)
+        orderDetail_df = pd.read_sql(sql, con=self.db_mssql)
+        return orderDetail_df
 
     def query_RewardPointSummary(self, data_in: dict) -> (int, pd.DataFrame):
         return self._base_query_RewardPointSummary(data_in)
@@ -605,7 +620,7 @@ group by dt.JobId
                                  'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
                                  'islatest': islatest,
                                  'jobrank': jobrank,
-                                 'jobname':jobrank_df.loc[_index, 'JOBNAME'],
+                                 'jobname': jobrank_df.loc[_index, 'JOBNAME'],
                                  'jobrankpoint': temp_jobrankpoint})
 
         # 存起来
@@ -784,13 +799,14 @@ group by dt.JobId
     def query_order(self, data_in: dict) -> (int, pd.DataFrame):
         return self._base_query_order(data_in=data_in)
 
+    def query_orderDetail(self, data_in: dict) -> pd.DataFrame:
+        return self._base_query_orderDetail(data_in)
+
 
 if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {"jobid": 100016, }
-    res_df = worker.query_B_rewardPointDetail(data_in=data)
-    res_df1 = worker.query_RewardPointSummary(data)
+    data = {"PointOrderID": 29, }
+    res_df = worker.query_orderDetail(data_in=data)
     print(res_df)
-    print(res_df1)
