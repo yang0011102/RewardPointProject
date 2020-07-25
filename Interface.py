@@ -290,23 +290,33 @@ group by dt.JobId
         jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
 
         # 填充
-        for i in maninfo_df.index:
-            man = maninfo_df.loc[i, '工号']
+        for man in all_id:
+            man_select = maninfo_df['工号'] == man
             # 学历积分
             SchoolPoints = 0
-            if len(self.rewardPointStandard.loc[
-                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[i, '学历'], 'PointsAmount']) == 1:
-                SchoolPoints = self.rewardPointStandard.loc[
-                    self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount'].values[0]
-                if maninfo_df.loc[0, '学历'] == '本科' and maninfo_df.loc[0, '学校'] in self.HighSchoolList:
-                    SchoolPoints += 500
+            if len(maninfo_df.loc[man_select, '学历']) > 0:  # 检查学历字段是否为空
+                education = maninfo_df.loc[man_select, '学历'].values[0]
+                if len(self.rewardPointStandard.loc[
+                           self.rewardPointStandard['CheckItem'] == education, 'PointsAmount']) > 0:  # 检查学历对应的积分是否存在
+                    SchoolPoints = self.rewardPointStandard.loc[
+                        self.rewardPointStandard['CheckItem'] == education, 'PointsAmount'].values[0]
+                    if education == '本科':
+                        if len(maninfo_df.loc[man_select, '学校']) > 0:  # 检查学校字段是否为空
+                            if maninfo_df.loc[man_select, '学校'].values[0] in self.HighSchoolList:
+                                SchoolPoints += 500
             # 职称积分
-            TittlePoints = 0  # 这个还没做
-            if len(self.rewardPointStandard.loc[
-                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[i, '职称等级'], 'PointsAmount']) > 0:
-                TittlePoints = max(self.rewardPointStandard.loc[
-                                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[
-                                           i, '职称等级'], 'PointsAmount'].tolist())
+            TittlePoint_list = []
+            if len(maninfo_df.loc[man_select, '职称等级']) > 0:  # 检查职称等级字段是否为空
+                for _rk in maninfo_df.loc[man_select, '职称等级'].tolist():
+                    if len(self.rewardPointStandard.loc[
+                               self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount']) > 0:  # 检查职称等级对应的积分是否存在
+                        TittlePoint_list.append(
+                            self.rewardPointStandard.loc[
+                                self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount'].values[0])
+            if len(TittlePoint_list) == 0:
+                TittlePoints = 0
+            else:
+                TittlePoints = max(TittlePoint_list)
             # 工龄积分
             serving_begindate = datetime.datetime.strptime(
                 manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
@@ -348,7 +358,7 @@ group by dt.JobId
                                 self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                                     _index, '职等'], 'PointsAmount'].values[0]
                     jobrankpoint += int(temp_standard * months)
-            maninfo_df.loc[i, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
+            maninfo_df.loc[man_select, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             # 年度固定积分
             year_SchoolPoints, year_TittlePoints, year_ServingAgePoints, year_jobrankpoint = 0, 0, 0, 0
             if serving_begindate.year >= today.year:
@@ -356,10 +366,11 @@ group by dt.JobId
                 year_ServingAgePoints = ServingAgePoints
             else:
                 year_ServingAgePoints = 2000
-            maninfo_df.loc[i, '总累计积分'] = maninfo_df.loc[i, '固定积分'] + maninfo_df.loc[i, '总获得管理积分']
+            maninfo_df.loc[man_select, '总累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
+                man_select, '总获得管理积分']
             maninfo_df.loc[
-                i, '年度累计积分'] = year_SchoolPoints + year_TittlePoints + year_ServingAgePoints + year_jobrankpoint + \
-                               maninfo_df.loc[i, '总获得管理积分']
+                man_select, '年度累计积分'] = year_SchoolPoints + year_TittlePoints + year_ServingAgePoints + year_jobrankpoint + \
+                                        maninfo_df.loc[man_select, '总获得管理积分']
         return totalLength, maninfo_df
 
     def _base_query_goods(self, data_in: dict) -> (int, pd.DataFrame):
@@ -498,7 +509,6 @@ group by dt.JobId
         man_data = {}
         man = data_in.get('jobid')
         man_data['工号'] = man
-        #  学历,职称积分
         maninfo_base_sql = '''
         select 
         bd_psndoc.name as 姓名,bd_psndoc.code as 工号,tectittle.name as 职称,tittlerank.name as 职称等级,
@@ -516,11 +526,11 @@ group by dt.JobId
         maninfo_sql = maninfo_base_sql + " where " + ' and '.join(query_item)
         print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
+        #  学历积分
         SchoolPoints = 0
         is985211 = False
-        TittlePoints = 0  # 这个还没做
-        School_data, Tittle_data = {}, {}
-        if len(maninfo_df) != 0:
+        School_data, serving_data = {}, {}
+        if not pd.isna(maninfo_df.loc[0, '学历']):  # 如果学历字段不为空
             if len(self.rewardPointStandard.loc[
                        self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '学历'], 'PointsAmount']) == 1:
                 SchoolPoints = self.rewardPointStandard.loc[
@@ -531,13 +541,19 @@ group by dt.JobId
             School_data['schoolPoints'] = SchoolPoints
             School_data['education'] = maninfo_df.loc[0, '学历']
             School_data['is985211'] = is985211
+        # 职称积分
+        Tittle_data = {'tittleRankPoint': 0}
+        for _index in maninfo_df.index:
+            _rk = maninfo_df.loc[_index, '职称等级']
             if len(self.rewardPointStandard.loc[
-                       self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '职称等级'], 'PointsAmount']) > 0:
+                       self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount']) > 0:
                 TittlePoints = self.rewardPointStandard.loc[
-                    self.rewardPointStandard['CheckItem'] == maninfo_df.loc[0, '职称等级'], 'PointsAmount'].values[0]
-            Tittle_data['tectittle'] = maninfo_df.loc[0, '职称']
-            Tittle_data['tittleRank'] = maninfo_df.loc[0, '职称等级']
-            Tittle_data['tittleRankPoint'] = TittlePoints
+                    self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount'].values[0]
+                if TittlePoints > Tittle_data['tittleRankPoint']:
+                    Tittle_data['tittleRankPoint'] = TittlePoints
+                    Tittle_data['tectittle'] = maninfo_df.loc[_index, '职称']
+                    Tittle_data['tittleRank'] = _rk
+                    Tittle_data['tittleRankPoint'] = TittlePoints
         ServingAge_base_sql = '''
         select 
         hi_psnjob.begindate,hi_psnjob.enddate
@@ -553,7 +569,6 @@ group by dt.JobId
         ServingAge_sql = ServingAge_base_sql.format(man)
         manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
         #  工龄积分
-        serving_data = {}
         serving_begindate = datetime.datetime.strptime(manServing_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
         serving_count_time = datetime.datetime(year=2014, month=1, day=1)
         if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
@@ -807,6 +822,6 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {"PointOrderID": 29, }
-    res_df = worker.query_orderDetail(data_in=data)
+    data = {"jobid": 100297, }
+    res_df = worker.query_B_rewardPointDetail(data_in=data)
     print(res_df)
