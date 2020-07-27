@@ -618,7 +618,7 @@ group by dt.JobId
         query_sql = " where " + ' and '.join(query_item)
         if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
             base_sql = '''
-            select PointOrder.PointOrderID,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
+            select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
             PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
             from PointOrder 
             left join 
@@ -632,7 +632,7 @@ group by dt.JobId
         else:
             base_sql = '''
             select * from
-            (select ROW_NUMBER() OVER (ORDER BY PointOrderID) as rownumber,PointOrder.PointOrderID,PointOrder.JobId,
+            (select ROW_NUMBER() OVER (ORDER BY PointOrderID) as rownumber,PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,
             PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
             from PointOrder 
             left join 
@@ -999,5 +999,5 @@ if __name__ == "__main__":
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
     data = {"jobid": 100297, }
     # data = {"pageSize": 10, "page": 2}
-    _, res_df = worker.query_FixedPoints(data_in=data)
+    _, res_df = worker.query_order(data_in=data)
     print(res_df)

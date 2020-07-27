@@ -403,6 +403,7 @@ def dispatcher(selector, data, files=None):
             _response = {"code": 0,
                          "msg": "",
                          "data": worker.query_orderDetail(data_in=data)}
+        return _response
 
     def delete_cart() -> dict:
         res = shoppingCartWorker.deleteCart(data_in=data)
