@@ -41,7 +41,7 @@ def _download(filename):
 def _inferface(selector):
     data = request.form.to_dict()
     if data == {}:
-        data = json.loads(request.get_data(as_text=True))
+        data = simplejson.loads(request.get_data(as_text=True))
         print("data is json")
     print(data)
     file = request.files.get('file')
