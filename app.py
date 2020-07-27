@@ -26,15 +26,15 @@ app.response_class = MyResponse
 logging.basicConfig(filename=f"./log/web.{time.strftime('%Y_%m_%d')}.txt", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-@app.route('/2048game')
-def _show():
-    return render_template('2048.html')
-
-
-@app.route('/download/<filename>')
-def _download(filename):
-    print(filename)
-    return send_from_directory(DOWNLOAD_FOLDER, filename=filename)
+# @app.route('/2048game')
+# def _show():
+#     return render_template('2048.html')
+#
+#
+# @app.route('/download/<filename>')
+# def _download(filename):
+#     print(filename)
+#     return send_from_directory(DOWNLOAD_FOLDER, filename=filename)
 
 
 @app.route('/Interface/<selector>', methods=['POST'])

@@ -520,22 +520,22 @@ group by dt.JobId
                 if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
                     jobrank_begindate = jobrank_count_time
                 man_workinfo.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
-                for _index in man_workinfo.index:
-                    if pd.isna(man_workinfo.loc[_index, 'ENDDATE']):
+                for work_index in man_workinfo.index:
+                    if pd.isna(man_workinfo.loc[work_index, 'ENDDATE']):
                         temp_enddate = today
                     else:
-                        temp_enddate = datetime.datetime.strptime(man_workinfo.loc[_index, 'ENDDATE'], "%Y-%m-%d")
-                    if isinstance(man_workinfo.loc[_index, 'BEGINDATE'], str):
-                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[_index, 'BEGINDATE'], "%Y-%m-%d")
+                        temp_enddate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
+                    if isinstance(man_workinfo.loc[work_index, 'BEGINDATE'], str):
+                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'], "%Y-%m-%d")
                     else:
-                        temp_begindate = man_workinfo.loc[_index, 'BEGINDATE']
+                        temp_begindate = man_workinfo.loc[work_index, 'BEGINDATE']
                     if temp_begindate.__ge__(newYearsDay):  # 过了元旦不算
                         continue
                     elif temp_enddate.__ge__(newYearsDay):
                         temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
                     months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
                     temp_standard = 0
-                    jobrank = man_workinfo.loc[_index, '职等']
+                    jobrank = man_workinfo.loc[work_index, '职等']
                     if len(jobrank) != 0:  # 如果职等字段不为空
                         temp_standard = 0
                         if len(self.rewardPointStandard.loc[
@@ -997,7 +997,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'PointOrderID': '29'}
+    data = {'jobid': 100016}
     # data = {"pageSize": 10, "page": 2}
-    res_df = worker.query_orderDetail(data_in=data)
+    res_df = worker.query_FixedPoints(data_in=data)
     print(res_df)
