@@ -552,8 +552,8 @@ group by dt.JobId
             query_item = ["goods.DataStatus=0"]  # 查询条件
             # 商品名称
             if data_in.get("Name"):
-                goodName = "\'" + data_in.get('Name') + "\'"
-                query_item.append(f"goods.Name = {goodName}")
+                goodName = "\'%" + data_in.get('Name') + "%\'"
+                query_item.append(f"goods.Name like {goodName}")
             # 商品编码
             if data_in.get("GoodsCode"):
                 query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
@@ -997,7 +997,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'jobid': 100016}
+    data = {'Name': '飞'}
     # data = {"pageSize": 10, "page": 2}
-    res_df = worker.query_FixedPoints(data_in=data)
+    res_df = worker._base_query_goods(data_in=data)
     print(res_df)
