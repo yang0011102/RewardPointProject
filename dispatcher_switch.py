@@ -391,7 +391,7 @@ def dispatcher(selector, data, files=None):
         else:
             _response = {"code": 0,
                          "msg": "",
-                         "data": "http://192.168.40.161:8080" + url,
+                         "data": url,
                          }
         return _response
 
@@ -404,28 +404,19 @@ def dispatcher(selector, data, files=None):
                          "msg": "",
                          "data": worker.query_orderDetail(data_in=data)}
 
-    def query_FixedPoints():
-        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_FixedPoints,
-                                                                    'check_exist': check_query_FixedPoints,
-                                                                    })
-        if flag:
-            totalLength, res_df = worker.query_FixedPoints(data_in=data)
-            print("成功取数据")
+    def delete_cart() -> dict:
+        res = shoppingCartWorker.deleteCart(data_in=data)
+        print(res)
+        if res:
             _response = {"code": 0,
-                         "msg": "",
-                         "data": {"totalLength": totalLength,
-                                  "detail": df_tolist(res_df)}
+                         "msg": ""
                          }
-        return _response
+        else:
+            _response = {
+                "code": -1,
+                "msg": '删除失败'
+            }
 
-    def export_FixedPoints():
-        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_FixedPoints,
-                                                                    'check_exist': check_query_FixedPoints,
-                                                                    })
-        if flag:
-            _response = {"code": 0,
-                         "msg": "",
-                         "data": worker.query_FixedPoints(data_in=data)}
         return _response
 
     switch = {"query_rewardPoint": query_rewardPoint, "import_rewardPoint": import_rewardPoint,
@@ -439,9 +430,8 @@ def dispatcher(selector, data, files=None):
               "edit_cart_num": edit_cart_num, "create_order": create_order, "query_order": query_order,
               "confirm_order": confirm_order, "reject_order": reject_order, "finish_order": finish_order,
               "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage,
-              "export_FixedPoints": export_FixedPoints, "query_orderDetail": query_orderDetail,
-              "query_FixedPoints": query_FixedPoints
-              }
+              "query_orderDetail": query_orderDetail,
+              "delete_cart": delete_cart}
     if switch.get(selector):
         return switch.get(selector)()
     else:

@@ -235,7 +235,17 @@ def dispatcher(selector:str, data:dict, files=None):
 
     elif selector == "add_cart":
         _response = shoppingCartWorker.addCart(data_in=data)
-
+    elif selector == "delete_cart":
+        res = shoppingCartWorker.deleteCart(data_in=data)
+        if res:
+            _response = {"code": 0,
+                         "msg": ""
+                         }
+        else:
+            _response = {
+                "code": -1,
+                "msg": '删除失败'
+            }
     elif selector == "query_cart":
         res = shoppingCartWorker.getCartList(data_in=data)
         _response = {"code": 0,

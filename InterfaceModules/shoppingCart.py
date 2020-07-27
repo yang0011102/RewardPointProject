@@ -106,7 +106,8 @@ class ShoppingCartInterface:
 
     # 删除购物车商品
     def deleteCart(self, data_in:dict):
-        base_sql = "update ShoppingCart set Status=2, DataStatus=1 where shoppingCartID = %d" % (data_in.get("shoppingCartID"))
+        print(data_in.get("ShoppingCartID"))
+        base_sql = "update ShoppingCart set Status=2, DataStatus=1 where shoppingCartID = %s" % (data_in.get("ShoppingCartID"))
         print(base_sql)
         cur = self.db_mssql.cursor()
         cur.execute(base_sql)
