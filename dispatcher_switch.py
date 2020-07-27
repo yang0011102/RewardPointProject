@@ -404,6 +404,21 @@ def dispatcher(selector, data, files=None):
                          "msg": "",
                          "data": worker.query_orderDetail(data_in=data)}
 
+    def delete_cart() -> dict:
+        res = shoppingCartWorker.deleteCart(data_in=data)
+        print(res)
+        if res:
+            _response = {"code": 0,
+                         "msg": ""
+                         }
+        else:
+            _response = {
+                "code": -1,
+                "msg": '删除失败'
+            }
+
+        return _response
+
     switch = {"query_rewardPoint": query_rewardPoint, "import_rewardPoint": import_rewardPoint,
               "delete_rewardPoint": delete_rewardPoint, "export_rewardPoint": export_rewardPoint,
               "account_rewardPoint": account_rewardPoint, "query_RewardPointSummary": query_RewardPointSummary,
@@ -415,7 +430,8 @@ def dispatcher(selector, data, files=None):
               "edit_cart_num": edit_cart_num, "create_order": create_order, "query_order": query_order,
               "confirm_order": confirm_order, "reject_order": reject_order, "finish_order": finish_order,
               "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage,
-              "query_orderDetail": query_orderDetail}
+              "query_orderDetail": query_orderDetail,
+              "delete_cart": delete_cart}
     if switch.get(selector):
         return switch.get(selector)()
     else:
