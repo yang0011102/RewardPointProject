@@ -183,7 +183,7 @@ def get_dfUrl(df: pd.DataFrame, Operator: str) -> str:
     print('文件路径', filepath)
     df.to_excel(filepath, index=False)
     print('保存到', filepath)
-    return "http://192.168.40.161:8080/download/" + filename  # 传回相对路径
+    return "http://192.168.40.161:8080/load/download/" + filename  # 传回相对路径
 
 
 def isEmpty(obj):
