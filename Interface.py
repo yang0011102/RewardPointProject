@@ -360,8 +360,15 @@ group by dt.JobId
             maninfo_df.loc[man_select, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             maninfo_df.loc[man_select, '总累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
                 man_select, '总获得管理积分']
-            maninfo_df.loc[
-                man_select, '年度累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[man_select, '年度管理积分']
+            # 年度固定积分
+            year_SchoolPoints, year_TittlePoints, year_ServingAgePoints, year_jobrankpoint = 0, 0, 0, 0
+            if serving_begindate.year >= today.year:
+                year_SchoolPoints = SchoolPoints
+                year_ServingAgePoints = ServingAgePoints
+            else:
+                year_ServingAgePoints = 2000
+            maninfo_df.loc[man_select, '年度累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
+                man_select, '年度管理积分']
         return totalLength, maninfo_df
 
     def _base_query_FixedPoints(self, data_in: dict) -> (int, pd.DataFrame):
@@ -460,12 +467,12 @@ group by dt.JobId
         jobrank_sql = jobrank_base_sql.format(all_id_tupe)
         print(jobrank_sql)
         jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
-        res_df = pd.DataFrame(columns=('姓名', '工号', '部门','组织', '职务', '职称积分', '学历积分', '工龄积分', '职务积分'))
+        res_df = pd.DataFrame(columns=('姓名', '工号', '部门', '组织', '职务', '职称积分', '学历积分', '工龄积分', '职务积分'))
         res_df['工号'] = all_id
         for _index in res_df.index:
             man = res_df.loc[_index, '工号']
             man_select = maninfo_df['工号'] == man
-            for _item in ['姓名', '部门', '职务','组织']:
+            for _item in ['姓名', '部门', '职务', '组织']:
                 if len(maninfo_df.loc[man_select, _item]) == 1:
                     res_df.loc[_index, _item] = maninfo_df.loc[man_select, _item].values[0]
             #  学历积分
@@ -990,7 +997,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    # data = {"jobid": 100297, }
-    data = {"pageSize": 10, "page": 2}
-    _,res_df = worker._base_query_FixedPoints(data_in=data)
+    data = {"jobid": 100297, }
+    # data = {"pageSize": 10, "page": 2}
+    _, res_df = worker.query_FixedPoints(data_in=data)
     print(res_df)

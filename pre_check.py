@@ -93,3 +93,12 @@ check_query_order = []  # 必填
 # 查询订单详情
 pre_query_orderDetail = {"PointOrderID": str}
 check_query_orderDetail = ["PointOrderID"]  # 必填
+
+
+# 查询固定积分
+pre_query_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int}
+check_query_FixedPoints = []  # 必填
+
+# 导出固定积分
+pre_export_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int,"Operator":int}
+check_export_FixedPoints = ["Operator"]  # 必填

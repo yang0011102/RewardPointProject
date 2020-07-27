@@ -391,7 +391,7 @@ def dispatcher(selector, data, files=None):
         else:
             _response = {"code": 0,
                          "msg": "",
-                         "data": url,
+                         "data": "http://192.168.40.161:8080" + url,
                          }
         return _response
 
@@ -404,6 +404,30 @@ def dispatcher(selector, data, files=None):
                          "msg": "",
                          "data": worker.query_orderDetail(data_in=data)}
 
+    def query_FixedPoints():
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_FixedPoints,
+                                                                    'check_exist': check_query_FixedPoints,
+                                                                    })
+        if flag:
+            totalLength, res_df = worker.query_FixedPoints(data_in=data)
+            print("成功取数据")
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": {"totalLength": totalLength,
+                                  "detail": df_tolist(res_df)}
+                         }
+        return _response
+
+    def export_FixedPoints():
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_FixedPoints,
+                                                                    'check_exist': check_query_FixedPoints,
+                                                                    })
+        if flag:
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": worker.query_FixedPoints(data_in=data)}
+        return _response
+
     switch = {"query_rewardPoint": query_rewardPoint, "import_rewardPoint": import_rewardPoint,
               "delete_rewardPoint": delete_rewardPoint, "export_rewardPoint": export_rewardPoint,
               "account_rewardPoint": account_rewardPoint, "query_RewardPointSummary": query_RewardPointSummary,
@@ -415,7 +439,9 @@ def dispatcher(selector, data, files=None):
               "edit_cart_num": edit_cart_num, "create_order": create_order, "query_order": query_order,
               "confirm_order": confirm_order, "reject_order": reject_order, "finish_order": finish_order,
               "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage,
-              "query_orderDetail": query_orderDetail}
+              "export_FixedPoints": export_FixedPoints, "query_orderDetail": query_orderDetail,
+              "query_FixedPoints": query_FixedPoints
+              }
     if switch.get(selector):
         return switch.get(selector)()
     else:
