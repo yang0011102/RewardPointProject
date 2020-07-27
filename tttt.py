@@ -6,8 +6,8 @@ head={"Accept":"application/json",
       "Content-Type":"application/json",
       "Origin":"null",
       }
-data_in = {'jobid':100297}
-_response = requests.post(url="http://192.168.40.161:8080/Interface/query_FixedPoints",
+data_in = {'PointOrderID': '29'}
+_response = requests.post(url="http://192.168.40.161:8080/Interface/query_orderDetail",
                           data=json.dumps(data_in),headers=head
                           )
-print(_response.__dict__)
+print(_response.json())

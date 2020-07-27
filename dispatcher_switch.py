@@ -402,7 +402,7 @@ def dispatcher(selector, data, files=None):
         if flag:
             _response = {"code": 0,
                          "msg": "",
-                         "data": worker.query_orderDetail(data_in=data)}
+                         "data": df_tolist(worker.query_orderDetail(data_in=data))}
         return _response
 
     def delete_cart() -> dict:

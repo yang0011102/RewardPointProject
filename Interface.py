@@ -997,7 +997,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {"jobid": 100297, }
+    data = {'PointOrderID': '29'}
     # data = {"pageSize": 10, "page": 2}
-    _, res_df = worker.query_order(data_in=data)
+    res_df = worker.query_orderDetail(data_in=data)
     print(res_df)
