@@ -53,7 +53,8 @@ class RewardPointInterface:
             print("进入条件查询")
             totalLength_sql = "select COUNT([RewardPointsdetailID]) as res " \
                               "from [RewardPointDB].[dbo].[RewardPointsDetail] as dt " \
-                              "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID "
+                              "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
+                              "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId "
             query_item = ["dt.DataStatus=0", "a.DataStatus=0"]  # 查询条件
             sql_item = []  # sql拼接条件
             # 工号
@@ -105,7 +106,7 @@ class RewardPointInterface:
                            "dt.ChangeAmount,dt.Reason,dt.Proof,dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted " \
                            "from [RewardPointDB].[dbo].[RewardPointsDetail] dt " \
                            "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
-                           "join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
+                           "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
                            "{0[1]}"
                 sql_item = [sql_item[0], query_sql]
             else:
@@ -118,7 +119,7 @@ class RewardPointInterface:
                                             dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted  
                                         FROM RewardPointDB.dbo.RewardPointsDetail dt 
                                         join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID 
-                                        join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId 
+                                        inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId 
                                         {0[1]}
                                 )as rowTempTable 
                                 WHERE RowNumber > {0[2]}*({0[3]}-1) and RowNumber<={0[2]}*({0[3]})'''
@@ -162,8 +163,7 @@ left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc
 join bd_defdoc c1 on edu.education = c1.pk_defdoc
 left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
 left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techposttitle 
-where hi_psnjob.endflag = 'N' and hi_psnjob.ismainjob = 'Y' and hi_psnjob.lastflag = 'Y' and bd_psndoc.enablestate = 2
-and edu.lasteducation = 'Y'
+{0[0]}
 '''
         today = datetime.datetime.today()  # 今天
         newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
@@ -195,12 +195,14 @@ and edu.lasteducation = 'Y'
         else:
             maninfo_base_sql = '''
             select  
-            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,org_adminorg.name as 组织,
             c1.name as 学历,edu.school as 学校,tittlerank.NAME as 职称等级
             from hi_psnjob
             join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
             left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
             join bd_defdoc c1 on edu.education = c1.pk_defdoc
+            left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
+            left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
             left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc
             left join bd_defdoc tittlerank on hi_psndoc_title.titlerank =tittlerank.pk_defdoc  
             {0[0]}
@@ -210,10 +212,12 @@ and edu.lasteducation = 'Y'
         print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
         maninfo_df = maninfo_df.reindex(columns=(
-            '姓名', '工号', '职称等级', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
+            '姓名', '工号', '组织', '部门', '职称等级', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
         # 计算数据长度
-        totalLength = pd.read_sql(sql=length_base_sql, con=self.db_nc).loc[0, 'RES']
+        totalLength = pd.read_sql(sql=length_base_sql.format(sql_item), con=self.db_nc).loc[0, 'RES']
         all_id = maninfo_df['工号'].tolist()
+        if len(all_id) == 0:
+            return 0, maninfo_df
         tempidlist = []
         for _ii in all_id:
             tempidlist.append("\'" + _ii + "\'")
@@ -360,13 +364,13 @@ group by dt.JobId
             maninfo_df.loc[man_select, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             maninfo_df.loc[man_select, '总累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
                 man_select, '总获得管理积分']
-            # 年度固定积分
-            year_SchoolPoints, year_TittlePoints, year_ServingAgePoints, year_jobrankpoint = 0, 0, 0, 0
-            if serving_begindate.year >= today.year:
-                year_SchoolPoints = SchoolPoints
-                year_ServingAgePoints = ServingAgePoints
-            else:
-                year_ServingAgePoints = 2000
+            # # 年度固定积分
+            # year_SchoolPoints, year_TittlePoints, year_ServingAgePoints, year_jobrankpoint = 0, 0, 0, 0
+            # if serving_begindate.year >= today.year:
+            #     year_SchoolPoints = SchoolPoints
+            #     year_ServingAgePoints = ServingAgePoints
+            # else:
+            #     year_ServingAgePoints = 2000
             maninfo_df.loc[man_select, '年度累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
                 man_select, '年度管理积分']
         return totalLength, maninfo_df
@@ -421,6 +425,11 @@ group by dt.JobId
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
+        res_df = pd.DataFrame(
+            columns=('姓名', '工号', '部门', '组织', '职务', '职称积分', '学历积分', '工龄积分', '职务积分', '学历', '入职时间', '职称'))
+        res_df['工号'] = all_id
+        if len(all_id) == 0:
+            return 0, res_df
         for _ii in all_id:
             tempidlist.append("\'" + _ii + "\'")
         all_id_tupe = ','.join(tempidlist)
@@ -467,8 +476,6 @@ group by dt.JobId
         jobrank_sql = jobrank_base_sql.format(all_id_tupe)
         print(jobrank_sql)
         jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
-        res_df = pd.DataFrame(columns=('姓名', '工号', '部门', '组织', '职务', '职称积分', '学历积分', '工龄积分', '职务积分'))
-        res_df['工号'] = all_id
         for _index in res_df.index:
             man = res_df.loc[_index, '工号']
             man_select = maninfo_df['工号'] == man
@@ -477,8 +484,10 @@ group by dt.JobId
                     res_df.loc[_index, _item] = maninfo_df.loc[man_select, _item].values[0]
             #  学历积分
             SchoolPoints = 0
+            education = ''
             if len(maninfo_df.loc[man_select, '学历']) > 0:  # 检查学历字段是否为空
                 education = maninfo_df.loc[man_select, '学历'].values[0]
+
                 if len(self.rewardPointStandard.loc[
                            self.rewardPointStandard['CheckItem'] == education, 'PointsAmount']) > 0:  # 检查学历对应的积分是否存在
                     SchoolPoints = self.rewardPointStandard.loc[
@@ -488,23 +497,26 @@ group by dt.JobId
                             if maninfo_df.loc[man_select, '学校'].values[0] in self.HighSchoolList:
                                 SchoolPoints += 500
             res_df.loc[_index, '学历积分'] = SchoolPoints
+            res_df.loc[_index, '学历'] = education
             # 职称积分
-            TittlePoint_list = []
+            TittlePoint = 0
+            tech_tittle = ''
             if len(maninfo_df.loc[man_select, '职称等级']) > 0:  # 检查职称等级字段是否为空
-                for _rk in maninfo_df.loc[man_select, '职称等级'].tolist():
+                for _rk, _tt in zip(maninfo_df.loc[man_select, '职称等级'].tolist(),
+                                    maninfo_df.loc[man_select, '职称'].tolist()):
                     if len(self.rewardPointStandard.loc[
                                self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount']) > 0:  # 检查职称等级对应的积分是否存在
-                        TittlePoint_list.append(
-                            self.rewardPointStandard.loc[
-                                self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount'].values[0])
-            if len(TittlePoint_list) == 0:
-                TittlePoints = 0
-            else:
-                TittlePoints = max(TittlePoint_list)
-            res_df.loc[_index, '职称积分'] = TittlePoints
+                        temp_tittlepoint = self.rewardPointStandard.loc[
+                            self.rewardPointStandard['CheckItem'] == _rk, 'PointsAmount'].values[0]
+                        if temp_tittlepoint > TittlePoint:
+                            TittlePoint = temp_tittlepoint
+                            tech_tittle = _tt
+            res_df.loc[_index, '职称积分'] = TittlePoint
+            res_df.loc[_index, '职称'] = tech_tittle
             # 工龄积分
             serving_begindate = datetime.datetime.strptime(
                 manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
+            res_df.loc[_index, '入职时间'] = manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0]
             serving_count_time = datetime.datetime(year=2014, month=1, day=1)
             if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
                 serving_begindate = serving_count_time
@@ -526,7 +538,8 @@ group by dt.JobId
                     else:
                         temp_enddate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
                     if isinstance(man_workinfo.loc[work_index, 'BEGINDATE'], str):
-                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'], "%Y-%m-%d")
+                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'],
+                                                                    "%Y-%m-%d")
                     else:
                         temp_begindate = man_workinfo.loc[work_index, 'BEGINDATE']
                     if temp_begindate.__ge__(newYearsDay):  # 过了元旦不算
@@ -621,7 +634,7 @@ group by dt.JobId
             select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
             PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
             from PointOrder 
-            left join 
+            join 
             openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
                         left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
                         left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
@@ -631,18 +644,17 @@ group by dt.JobId
             sql_item = [query_sql]
         else:
             base_sql = '''
-            select * from
-            (select ROW_NUMBER() OVER (ORDER BY PointOrderID) as rownumber,PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,
+            select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,
             PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
-            from PointOrder 
-            left join 
+            from    PointOrder 
+            inner hash join 
             openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
                         left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
                         left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
                         left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
                         where hi_psnjob.endflag =''N'' and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' ')
-                        as NCDB on NCDB.CODE = PointOrder.JobId {0[0]}) as temptable 
-                        where rownumber>{0[1]}*({0[2]}-1) and rownumber<={0[1]}*({0[2]})
+                        as NCDB on NCDB.CODE = PointOrder.JobId {0[0]}
+            order by PointOrder.PointOrderID offset {0[1]}*({0[2]}-1) rows fetch next {0[1]} rows only
             '''
             sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
         # 拼起来
@@ -700,6 +712,8 @@ group by dt.JobId
         maninfo_sql = maninfo_base_sql + " where " + ' and '.join(query_item)
         print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
+        if len(maninfo_df)==0:
+            return man_data
         #  学历积分
         SchoolPoints = 0
         is985211 = False
@@ -997,7 +1011,6 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'Name': '飞'}
-    # data = {"pageSize": 10, "page": 2}
-    res_df = worker._base_query_goods(data_in=data)
+    data = {"jobid": 100297}
+    res_df = worker.query_B_rewardPointDetail(data_in=data)
     print(res_df)

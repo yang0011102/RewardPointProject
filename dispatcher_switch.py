@@ -522,7 +522,7 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
                     _response = {"code": 6,
                                  "msg": f"缺少列：{i}，请传送{mustFile.get('table_column')}"}
                     return False, _response
-                if temp_df[i].isnull().any:
+                if temp_df[i].isnull().all():
                     _response = {"code": 7,
                                  "msg": f"请勿传送空列：{i}"}
                     return False, _response
