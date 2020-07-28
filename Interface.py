@@ -291,7 +291,7 @@ group by dt.JobId
         print(jobrank_sql)
         jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
         jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
-
+        serving_count_time = datetime.datetime(year=2004, month=1, day=1)
         # 填充
         for man in all_id:
             man_select = maninfo_df['工号'] == man
@@ -323,7 +323,7 @@ group by dt.JobId
             # 工龄积分
             serving_begindate = datetime.datetime.strptime(
                 manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
-            serving_count_time = datetime.datetime(year=2014, month=1, day=1)
+
             if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
                 serving_begindate = serving_count_time
             years, months = countTime_NewYear(beginDate=serving_begindate,
@@ -692,6 +692,8 @@ group by dt.JobId
     def query_B_rewardPointDetail(self, data_in: dict) -> dict:
         today = datetime.datetime.today()  # 今天
         newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
+        jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
+        serving_count_time = datetime.datetime(year=2004, month=1, day=1)
         man_data = {}
         man = data_in.get('jobid')
         man_data['工号'] = man
@@ -757,7 +759,7 @@ group by dt.JobId
         manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
         #  工龄积分
         serving_begindate = datetime.datetime.strptime(manServing_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
-        serving_count_time = datetime.datetime(year=2014, month=1, day=1)
+
         if serving_begindate.__le__(serving_count_time):  # 如果早于2004-01-01,那么从2004-01-01开始算
             serving_begindate = serving_count_time
         years, months = countTime_NewYear(beginDate=serving_begindate,
@@ -787,7 +789,7 @@ group by dt.JobId
         jobrank_sql = jobrank_base_sql.format(man)
         print(jobrank_sql)
         jobrank_df = pd.read_sql(jobrank_sql, self.db_nc)
-        jobrank_count_time = datetime.datetime(year=2018, month=1, day=1)
+
         jobrank_begindate = datetime.datetime.strptime(jobrank_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
         if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
             jobrank_begindate = jobrank_count_time
