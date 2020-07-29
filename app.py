@@ -42,6 +42,7 @@ def _inferface(selector):
     data = request.form.to_dict()
     if data == {}:
         data = simplejson.loads(request.get_data(as_text=True))
+    print("--------- Data is: ",data)
     file = request.files.get('file')
     _response = simplejson.dumps(dispatcher(selector=selector, data=data, files=file), cls=SuperEncoder,ignore_nan=True)
     return _response

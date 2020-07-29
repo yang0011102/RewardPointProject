@@ -517,39 +517,29 @@ group by dt.JobId
             if data_in.get("GoodsCode"):
                 query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
             # 商品状态
-            if data_in.get("Status"):
+            if data_in.get("Status") or data.get("Status") == 0:
                 query_item.append(f"goods.Status = {data_in.get('Status')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
+            base_sql = '''
+                            select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
+                            goods.GoodsID,
+                            sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,
+                            sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,
+                            sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock
+                            from Goods goods
+                            left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
+                            left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
+                             {0[0]}
+                            group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status
+                              order by goods.GoodsID asc {0[1]}'''
+            sql_item = [query_sql]
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
-                base_sql = '''
-                select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
-                goods.GoodsID,
-                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock
-                from Goods goods
-                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
-                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
-                 {0[0]}
-                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status'''
-                sql_item = [query_sql]
+                sql_item.append('')
             else:
-                base_sql = '''
-                select * from
-                (
-                select row_number() over(order by goods.GoodsID asc) as rownumber,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
-                goods.GoodsID,
-                sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,
-                sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock
-                from dbo.Goods goods
-                left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
-                left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
-                {0[0]} 
-                group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status) as temptable
-                where rownumber>{0[1]}*({0[2]}-1) and rownumber<={0[1]}*({0[2]}) '''
-                sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
+                page_sql = " offset {0[0]}*({0[1]}-1) rows fetch next {0[0]} rows only".format(
+                    [data_in.get("pageSize"), data_in.get("page")])
+                sql_item.append(page_sql)
             # 拼起来
             sql = base_sql.format(sql_item)
             print("拼sql", sql)
@@ -575,7 +565,7 @@ group by dt.JobId
         query_item = ["PointOrder.DataStatus=0"]
         if data_in.get("Operator"):
             query_item.append(f"PointOrder.JobId={data_in.get('Operator')}")
-        if data_in.get("OrderStatus"):
+        if data_in.get("OrderStatus") or data_in.get("OrderStatus") == 0:
             query_item.append(f"PointOrder.OrderStatus={data_in.get('OrderStatus')}")
         query_sql = " where " + ' and '.join(query_item)
         base_sql = '''
@@ -997,10 +987,8 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    # data = {"OrderStatus": '0', "Operator": 100297, 'page': 1, 'pagesize': 10}
-    file = pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
-    # res_df = worker.query_order(data_in=data)
-    # print(res_df)
-    # res = worker.import_rewardPoint_onesql(data_in={"Operator": '100297'}, file_df=file)
-    res = worker.query_FixedPoints(data_in={'page': 1, 'pageSize': 10})
-    print(res)
+    data = {'page': 1, 'pageSize': 10, 'Status': 0}
+    if data.get("Status") or data.get("Status") == 0:
+        print(1)
+    # res = worker.query_goods(data_in=data)
+    # print(res)
