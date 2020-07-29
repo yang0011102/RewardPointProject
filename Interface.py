@@ -107,12 +107,12 @@ class RewardPointInterface:
                            "from [RewardPointDB].[dbo].[RewardPointsDetail] dt " \
                            "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
                            "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
-                           "{0[1]}"
+                           "{0[1]} order by dt.RewardPointsdetailID desc"
                 sql_item = [sql_item[0], query_sql]
             else:
                 print("分页")
                 base_sql = '''SELECT * FROM( 
-                                SELECT ROW_NUMBER() OVER (ORDER BY RewardPointsDetailID) AS RowNumber, 
+                                SELECT ROW_NUMBER() OVER (ORDER BY RewardPointsDetailID desc) AS RowNumber, 
                                    dt.RewardPointsdetailID,dt.DepartmentLv1,dt.DepartmentLv2, 
                                       dt.DepartmentLv3,dt.FunctionalDepartment,dt.Submit,NCDB.NAME as Name,dt.Post, 
                                          a.Name as 积分类型,{0[0]},dt.ChangeType,dt.ChangeAmount,dt.Reason,dt.Proof,
@@ -629,34 +629,24 @@ group by dt.JobId
         if data_in.get("OrderStatus"):
             query_item.append(f"PointOrder.OrderStatus={data_in.get('OrderStatus')}")
         query_sql = " where " + ' and '.join(query_item)
+        base_sql = '''
+        select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
+        PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
+        from PointOrder 
+        join 
+        openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
+                    left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
+                    left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
+                    left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
+                    where hi_psnjob.endflag =''N'' and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' ')
+                    as NCDB on NCDB.CODE = PointOrder.JobId {0[0]} 
+        order by PointOrder.PointOrderID desc {0[1]}'''
         if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
-            base_sql = '''
-            select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
-            PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
-            from PointOrder 
-            join 
-            openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
-                        left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
-                        left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
-                        left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
-                        where hi_psnjob.endflag =''N'' and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' ')
-                        as NCDB on NCDB.CODE = PointOrder.JobId {0[0]}'''
-            sql_item = [query_sql]
+            sql_item = [query_sql, '']
         else:
-            base_sql = '''
-            select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,
-            PointOrder.OrderStatus,PointOrder.TotalNum,PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
-            from    PointOrder 
-            inner hash join 
-            openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
-                        left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
-                        left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
-                        left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
-                        where hi_psnjob.endflag =''N'' and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' ')
-                        as NCDB on NCDB.CODE = PointOrder.JobId {0[0]}
-            order by PointOrder.PointOrderID offset {0[1]}*({0[2]}-1) rows fetch next {0[1]} rows only
-            '''
-            sql_item = [query_sql, data_in.get("pageSize"), data_in.get("page")]
+            page_sql = " offset {0[0]}*({0[1]}-1) rows fetch next {0[0]} rows only".format(
+                [data_in.get("pageSize"), data_in.get("page")])
+            sql_item = [query_sql, page_sql]
         # 拼起来
         sql = base_sql.format(sql_item)
         print("拼sql", sql)
@@ -714,7 +704,7 @@ group by dt.JobId
         maninfo_sql = maninfo_base_sql + " where " + ' and '.join(query_item)
         print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
-        if len(maninfo_df)==0:
+        if len(maninfo_df) == 0:
             return man_data
         #  学历积分
         SchoolPoints = 0
@@ -1013,6 +1003,8 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {"jobid": 100297}
-    res_df = worker.query_B_rewardPointDetail(data_in=data)
-    print(res_df)
+    data={"name":'陈明姣',"Operator":100297}
+    # file=pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
+    # res_df = worker.import_rewardPoint(data_in=data,file_df=file)
+    _, res_df = worker._base_query_RewardPointSummary(data_in=data)
+    print(get_dfUrl(df=res_df, Operator=str(data.get("Operator"))))
