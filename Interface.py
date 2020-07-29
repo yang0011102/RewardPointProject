@@ -1009,5 +1009,5 @@ if __name__ == "__main__":
     data={"name":'陈明姣',"Operator":100297}
     # file=pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
     # res_df = worker.import_rewardPoint(data_in=data,file_df=file)
-    res = worker.query_goods(data_in={})
+    res = worker.query_goods(data_in={'Status':0})
     print(res)

@@ -49,7 +49,7 @@ pre_export_RewardPointSummary = {"name": str, "jobid": int,
 check_export_RewardPointSummary = ["Operator"]  # 必填
 
 # 查询商品信息
-pre_query_goods = {"Name": str, "GoodsCode": int, "page": int, "pageSize": int}
+pre_query_goods = {"Name": str, "GoodsCode": int,"Status":int, "page": int, "pageSize": int}
 check_query_goods = []  # 必填
 
 # 导入商品
