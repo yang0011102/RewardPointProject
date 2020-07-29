@@ -616,7 +616,7 @@ group by dt.JobId
 
     def export_RewardPointSummary(self, data_in: dict) -> str:
         _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
+        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
 
     def query_B_rewardPointDetail(self, data_in: dict) -> dict:
         today = datetime.datetime.today()  # 今天
@@ -791,7 +791,7 @@ group by dt.JobId
         :return:
         '''
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
+        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
 
     def import_rewardPoint_onesql(self, data_in: dict, file_df: pd.DataFrame) -> bool:
         rewardPointType_df = pd.read_sql(
@@ -912,7 +912,7 @@ group by dt.JobId
 
     def export_goods(self, data_in: dict) -> str:
         _, res_df = self._base_query_goods(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
+        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
 
     def import_goods(self, data_in: dict, file_df: pd.DataFrame) -> bool:
         cur = self.db_mssql.cursor()
@@ -927,7 +927,7 @@ group by dt.JobId
                 _item = f'''
 ({_code},'{file_df.loc[file_df['商品编码'] == _code, '商品名称'].values[0]}',
 {file_df.loc[file_df['商品编码'] == _code, '商品单价'].values[0]},'{file_df.loc[file_df['商品编码'] == _code, '市场价'].values[0]}',
-'{file_df.loc[file_df['商品编码'] == _code, '购买价'].values[0]}',{data_in.get('Operator')})'''
+'{file_df.loc[file_df['商品编码'] == _code, '购买价'].values[0]}','{data_in.get('Operator')}')'''
                 insert_item.append(_item)
         if insert_item != []:
             insert_sql = base_insert_sql + ','.join(insert_item)
@@ -943,7 +943,7 @@ group by dt.JobId
         for _index in file_df.index:
             _item = f'''
 ({all_goodsCode.loc[all_goodsCode['GoodsCode'] == file_df.loc[_index, '商品编码'], 'GoodsID'].values[0]},0,
-{file_df.loc[_index, '数量']},'{file_df.loc[_index, '商品计量单位']}',{data_in.get('Operator')})'''
+{file_df.loc[_index, '数量']},'{file_df.loc[_index, '商品计量单位']}','{data_in.get('Operator')}')'''
             insert_item.append(_item)
         insert_sql = base_insert_sql + ','.join(insert_item)
         print(insert_sql)
@@ -980,7 +980,7 @@ group by dt.JobId
 
     def export_FixedPoints(self, data_in: dict) -> str:
         _, res_df = self._base_query_FixedPoints(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
+        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
 
 
 if __name__ == "__main__":

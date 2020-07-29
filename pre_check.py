@@ -27,7 +27,7 @@ check_delete_rewardPoint = ["RewardPointsdetailID"]  # 必填
 # 导出积分明细
 pre_export_rewardPoint = {"name": str, "jobid": int, "isBonus": int, "isAccounted": int,
                           'rewardPointsType': str,
-                          "Operator": int}
+                          "Operator": str}
 check_export_rewardPoint = ["Operator"]  # 必填
 
 # 结算积分明细
@@ -45,7 +45,7 @@ check_query_RewardPointSummary = []  # 必填
 
 # 积分汇总导出
 pre_export_RewardPointSummary = {"name": str, "jobid": int,
-                                 "page": int, "pageSize": int, "Operator": int}
+                                 "page": int, "pageSize": int, "Operator": str}
 check_export_RewardPointSummary = ["Operator"]  # 必填
 
 # 查询商品信息
@@ -53,7 +53,7 @@ pre_query_goods = {"Name": str, "GoodsCode": int,"Status":int, "page": int, "pag
 check_query_goods = []  # 必填
 
 # 导入商品
-pre_import_goods = {"Operator": int}
+pre_import_goods = {"Operator": str}
 filetype_import_goods = ['.xlsx', '.xls']  # 文件类型检查项
 import_goods_columncheck = ['商品编码', '商品名称', '商品单价', '商品计量单位', '数量']
 check_import_goods = ["Operator"]  # 必填
@@ -62,7 +62,7 @@ check_import_goods = ["Operator"]  # 必填
 #                                            "%Y-%m-%d", "%Y/%m/%d %H:%M:%S"]}  # 文件内时间字段检查项
 # 导出商品
 pre_export_goods = {"Name": str, "GoodsCode": int, "page": int, "pageSize": int,
-                    "Operator": int}
+                    "Operator": str}
 check_export_goods = ["Operator"]  # 必填
 
 # 商品变更
@@ -70,7 +70,7 @@ pre_offShelf_goods = {"GoodsCode": str, "Status": int}
 check_offShelf_goods = ["GoodsCode"]  # 必填
 
 # 上传商品图片
-pre_upload_goodsImage = {"GoodsCode": str, 'Operator': int}
+pre_upload_goodsImage = {"GoodsCode": str, 'Operator': str}
 check_upload_goodsImage = ["GoodsCode", "Operator"]  # 必填
 imagetype_upload_goodsImage = ['png', 'jpg', 'jpeg', 'gif']  # 图片类型检查项
 # 新增活动
@@ -100,5 +100,5 @@ pre_query_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int}
 check_query_FixedPoints = []  # 必填
 
 # 导出固定积分
-pre_export_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int,"Operator":int}
+pre_export_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int,"Operator":str}
 check_export_FixedPoints = ["Operator"]  # 必填
