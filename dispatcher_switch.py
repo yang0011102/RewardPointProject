@@ -56,7 +56,7 @@ def dispatcher(selector, data, files=None):
         if not flag:
             return _response
         if worker.import_rewardPoint_onesql(data_in=data,
-                                     file_df=pd.read_excel(files.stream), ):
+                                            file_df=pd.read_excel(files.stream), ):
             _response = {"code": 0,
                          "msg": "",
                          }

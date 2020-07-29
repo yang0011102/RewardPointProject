@@ -168,12 +168,14 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
             select * 
             from (
             select  rownum as rowno,
-            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_adminorg.name as 组织,org_dept.name as 部门,
             c1.name as 学历,edu.school as 学校,tittlerank.NAME as 职称等级
             from hi_psnjob
             join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
             left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
             join bd_defdoc c1 on edu.education = c1.pk_defdoc
+            left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
+            left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
             left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
             left join bd_defdoc tittlerank on hi_psndoc_title.titlerank =tittlerank.pk_defdoc 
             {0[0]}
@@ -237,41 +239,11 @@ group by dt.JobId
         pointdetail = pd.read_sql(mssql_sql, self.db_mssql)
         maninfo_df = pd.merge(maninfo_df, pointdetail, left_on='工号', right_on='JobId', how='left')
         #  工龄表
-        ServingAge_base_sql = '''
-        select bd_psndoc.code,
-        min(hi_psnjob.begindate) as begindate
-        from hi_psnjob
-        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-        where
-        hi_psnjob.ismainjob ='Y' 
-        and bd_psndoc.enablestate =2
-        and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N')
-        and bd_psndoc.code in ({})
-        group by bd_psndoc.code 
-                    '''
+        ServingAge_base_sql = '''select bd_psndoc.code,min(hi_psnjob.begindate) as begindate from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc where hi_psnjob.ismainjob ='Y' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N') and bd_psndoc.code in ({}) group by bd_psndoc.code '''
         ServingAge_sql = ServingAge_base_sql.format(all_id_tupe)
         manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
         #  职务表
-        jobrank_base_sql = '''
-        select 
-        ncinfo.*,std.PointsAmount
-        from
-        openquery(NC,'
-                select 
-                hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,
-                om_jobrank.jobrankname as 职等
-                from hi_psnjob
-                join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-                join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
-                where
-                hi_psnjob.ismainjob =''Y''
-                and bd_psndoc.enablestate =2
-                and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'')
-                and bd_psndoc.code in ({})
-                order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo
-        inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
-        where std.DataStatus=0
-        '''
+        jobrank_base_sql = '''select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code, om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'') and bd_psndoc.code in ({}) order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0'''
         tempidlist = []
         for _ii in all_id:
             tempidlist.append("\'\'" + _ii + "\'\'")
@@ -412,6 +384,21 @@ group by dt.JobId
         maninfo_sql = maninfo_base_sql.format(sql_item)
         print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=self.db_nc)
+        length_base_sql = '''
+        select count(rownum) as res
+            from hi_psnjob
+            left join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+            left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
+            left join om_job on om_job.pk_job  = hi_psnjob.pk_job 
+            left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org
+            left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc 
+            left join bd_defdoc c1 on edu.education = c1.pk_defdoc
+            left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc 
+            left join bd_defdoc tectittle on hi_psndoc_title.pk_techposttitle = tectittle.pk_defdoc
+            left join bd_defdoc tittlerank on hi_psndoc_title.titlerank =tittlerank.pk_defdoc  {0[0]} 
+        '''
+        # 计算数据长度
+        totalLength = pd.read_sql(sql=length_base_sql.format(sql_item), con=self.db_nc).loc[0, 'RES']
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
         res_df = pd.DataFrame(
@@ -423,41 +410,11 @@ group by dt.JobId
             tempidlist.append("\'" + _ii + "\'")
         all_id_tupe = ','.join(tempidlist)
         #  工龄表
-        ServingAge_base_sql = '''
-                select bd_psndoc.code,
-                min(hi_psnjob.begindate) as begindate
-                from hi_psnjob
-                join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-                where
-                hi_psnjob.ismainjob ='Y' 
-                and bd_psndoc.enablestate =2
-                and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N')
-                and bd_psndoc.code in ({})
-                group by bd_psndoc.code 
-                            '''
+        ServingAge_base_sql = '''select bd_psndoc.code, min(hi_psnjob.begindate) as begindate from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc where hi_psnjob.ismainjob ='Y' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N') and bd_psndoc.code in ({}) group by bd_psndoc.code '''
         ServingAge_sql = ServingAge_base_sql.format(all_id_tupe)
         manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
         #  职务表
-        jobrank_base_sql = '''
-                select 
-                ncinfo.*,std.PointsAmount
-                from
-                openquery(NC,'
-                        select 
-                        hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,
-                        om_jobrank.jobrankname as 职等
-                        from hi_psnjob
-                        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
-                        join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
-                        where
-                        hi_psnjob.ismainjob =''Y''
-                        and bd_psndoc.enablestate =2
-                        and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'')
-                        and bd_psndoc.code in ({})
-                        order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo
-                inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
-                where std.DataStatus=0
-                '''
+        jobrank_base_sql = '''select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank  where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'') and bd_psndoc.code in ({}) order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0 '''
         tempidlist = []
         for _ii in all_id:
             tempidlist.append("\'\'" + _ii + "\'\'")
@@ -547,7 +504,7 @@ group by dt.JobId
                                     _index, '职等'], 'PointsAmount'].values[0]
                     jobrankpoint += int(temp_standard * months)
             res_df.loc[_index, '职务积分'] = jobrankpoint
-        return 1, res_df
+        return totalLength, res_df
 
     def _base_query_goods(self, data_in: dict) -> (int, pd.DataFrame):
         if data_in:  # 不为空则按照条件查询
@@ -879,7 +836,7 @@ group by dt.JobId
             sql_values.append(','.join(values_item))
         sql = base_sql.format(','.join(sql_values))
         print(sql)
-        cur=self.db_mssql.cursor()
+        cur = self.db_mssql.cursor()
         try:
             cur.execute(sql)
             print("sql执行完毕")
@@ -1044,4 +1001,6 @@ if __name__ == "__main__":
     file = pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
     # res_df = worker.query_order(data_in=data)
     # print(res_df)
-    res = worker.import_rewardPoint_onesql(data_in={"Operator": '100297'}, file_df=file)
+    # res = worker.import_rewardPoint_onesql(data_in={"Operator": '100297'}, file_df=file)
+    res = worker.query_FixedPoints(data_in={'page': 1, 'pageSize': 10})
+    print(res)
