@@ -570,6 +570,9 @@ group by dt.JobId
             # 商品编码
             if data_in.get("GoodsCode"):
                 query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
+            # 商品状态
+            if data_in.get("Status"):
+                query_item.append(f"goods.Status = {data_in.get('Status')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
@@ -1006,5 +1009,5 @@ if __name__ == "__main__":
     data={"name":'陈明姣',"Operator":100297}
     # file=pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
     # res_df = worker.import_rewardPoint(data_in=data,file_df=file)
-    _, res_df = worker._base_query_RewardPointSummary(data_in=data)
-    print(get_dfUrl(df=res_df, Operator=str(data.get("Operator"))))
+    res = worker.query_goods(data_in={})
+    print(res)
