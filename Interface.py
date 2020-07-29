@@ -98,32 +98,21 @@ class RewardPointInterface:
                 query_item.append("dt.MinusPoints > 0")
             query_sql = ' where ' + ' and '.join(query_item)
             print(query_sql)
+            base_sql = "select dt.RewardPointsdetailID,dt.DepartmentLv1,dt.DepartmentLv2,dt.DepartmentLv3," \
+                       "dt.FunctionalDepartment,NCDB.NAME as Name,dt.Submit,dt.Post,a.Name as 积分类型,{0[0]},dt.ChangeType," \
+                       "dt.ChangeAmount,dt.Reason,dt.Proof,dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted " \
+                       "from [RewardPointDB].[dbo].[RewardPointsDetail] dt " \
+                       "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
+                       "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
+                       "{0[1]} order by dt.RewardPointsdetailID desc {0[2]}"
             # 分页
+            sql_item = [sql_item[0], query_sql]
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
-                print("不分页")
-                base_sql = "select dt.RewardPointsdetailID,dt.DepartmentLv1,dt.DepartmentLv2,dt.DepartmentLv3," \
-                           "dt.FunctionalDepartment,NCDB.NAME as Name,dt.Submit,dt.Post,a.Name as 积分类型,{0[0]},dt.ChangeType," \
-                           "dt.ChangeAmount,dt.Reason,dt.Proof,dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted " \
-                           "from [RewardPointDB].[dbo].[RewardPointsDetail] dt " \
-                           "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
-                           "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
-                           "{0[1]} order by dt.RewardPointsdetailID desc"
-                sql_item = [sql_item[0], query_sql]
+                sql_item.append('')
             else:
-                print("分页")
-                base_sql = '''SELECT * FROM( 
-                                SELECT ROW_NUMBER() OVER (ORDER BY RewardPointsDetailID desc) AS RowNumber, 
-                                   dt.RewardPointsdetailID,dt.DepartmentLv1,dt.DepartmentLv2, 
-                                      dt.DepartmentLv3,dt.FunctionalDepartment,dt.Submit,NCDB.NAME as Name,dt.Post, 
-                                         a.Name as 积分类型,{0[0]},dt.ChangeType,dt.ChangeAmount,dt.Reason,dt.Proof,
-                                            dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted  
-                                        FROM RewardPointDB.dbo.RewardPointsDetail dt 
-                                        join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID 
-                                        inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId 
-                                        {0[1]}
-                                )as rowTempTable 
-                                WHERE RowNumber > {0[2]}*({0[3]}-1) and RowNumber<={0[2]}*({0[3]})'''
-                sql_item = [sql_item.copy()[0], query_sql, data_in.get("pageSize"), data_in.get("page")]
+                page_sql = " offset {0[0]}*({0[1]}-1) rows fetch next {0[0]} rows only".format(
+                    [data_in.get("pageSize"), data_in.get("page")])
+                sql_item.append(page_sql)
             sql = base_sql.format(sql_item)
             print("拼SQL:", sql)
             res_df = pd.read_sql(sql=sql, con=self.db_mssql)
@@ -145,7 +134,7 @@ class RewardPointInterface:
                   "dt.JobId,dt.AssessmentDate,dt.IsAccounted  " \
                   "from RewardPointDB.dbo.RewardPointsDetail dt " \
                   "join RewardPointDB.dbo.RewardPointsType a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
-                  "join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
+                  "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
                   "where dt.DataStatus=0 and a.DataStatus=0"
             res_df = pd.read_sql(sql=sql, con=self.db_mssql)
             # print("res_df", res_df)
@@ -280,7 +269,7 @@ group by dt.JobId
                 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'')
                 and bd_psndoc.code in ({})
                 order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo
-        join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
+        inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
         where std.DataStatus=0
         '''
         tempidlist = []
@@ -466,7 +455,7 @@ group by dt.JobId
                         and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'')
                         and bd_psndoc.code in ({})
                         order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo
-                join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
+                inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem
                 where std.DataStatus=0
                 '''
         tempidlist = []
@@ -635,8 +624,8 @@ group by dt.JobId
         base_sql = '''
         select PointOrder.PointOrderID,PointOrder.CreationDate,PointOrder.JobId,PointOrder.OrderStatus,PointOrder.TotalNum,
         PointOrder.TotalPrice,NCDB.NAME,NCDB.ORGNAME,NCDB.DEPTNAME 
-        from PointOrder 
-        join 
+        from RewardPointDB.dbo.PointOrder 
+        inner hash join 
         openquery(NC,'select bd_psndoc.code,bd_psndoc.name,org_dept.name AS DEPTNAME,org_adminorg.name AS ORGNAME from hi_psnjob
                     left join bd_psndoc on bd_psndoc.pk_psndoc=hi_psnjob.pk_psndoc
                     left join org_dept on org_dept.pk_dept= hi_psnjob.pk_dept
@@ -857,6 +846,51 @@ group by dt.JobId
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=str(data_in.get("Operator")))
 
+    def import_rewardPoint_onesql(self, data_in: dict, file_df: pd.DataFrame) -> bool:
+        rewardPointType_df = pd.read_sql(
+            "select RewardPointsTypeID,Name from RewardPointDB.dbo.RewardPointsType where DataStatus=0",
+            con=self.db_mssql)
+        base_sql = '''
+        insert into [RewardPointDB].[dbo].[RewardPointsDetail] (
+         ChangeType,CreatedBy,JobId,DepartmentLv1,DepartmentLv2,DepartmentLv3,Post,Name,RewardPointsTypeID,BonusPoints,
+         MinusPoints,Reason,Proof,ReasonType,FunctionalDepartment,Submit,AssessmentDate ) values{}
+        '''
+        sql_values = []
+        value_check = ['工号', '一级部门', '二级部门', '三级部门', '职务名称',
+                       '姓名', 'A分/B分', '加分',
+                       '减分', '加减分理由', '加减分依据', '理由分类', '职能部门/所在部门管理', '提交部门',
+                       '考核日期']
+        for i in file_df.index:
+            values_item = ['0', data_in.get("Operator")]
+            for vi in value_check:
+                value = file_df.loc[i, vi]
+                if pd.isna(value):
+                    values_item.append("\'" + '' + "\'")
+                elif vi == 'RewardPointsTypeID':  # 连RewardPointsType表查积分类型ID
+                    RewardPointsTypeID = rewardPointType_df.loc[
+                        rewardPointType_df['Name'] == value, 'RewardPointsTypeID'].values[0]
+                    values_item.append(str(RewardPointsTypeID))
+                elif isinstance(value, pd.Timestamp):  # 如果是Timestamp转字符串
+                    values_item.append("\'" + datetime_string(pd.to_datetime(value, "%Y-%m-%d %H:%M:%S")) + "\'")
+                elif isinstance(value, str):  # 如果是字符串 加上引号
+                    values_item.append("\'" + value + "\'")
+                else:
+                    values_item.append(str(value))
+            sql_values.append(','.join(values_item))
+        sql = base_sql.format(','.join(sql_values))
+        print(sql)
+        cur=self.db_mssql.cursor()
+        try:
+            cur.execute(sql)
+            print("sql执行完毕")
+            self.db_mssql.commit()
+            print("sql提交完毕")
+            return True
+        except Exception as e:
+            print(e.args)
+            return False
+
+    @verison_warning
     def import_rewardPoint(self, data_in: dict, file_df: pd.DataFrame) -> bool:
         rewardPointType_df = pd.read_sql(
             "select RewardPointsTypeID,Name from RewardPointDB.dbo.RewardPointsType where DataStatus=0",
@@ -1006,8 +1040,8 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data={"name":'陈明姣',"Operator":100297}
-    # file=pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
-    # res_df = worker.import_rewardPoint(data_in=data,file_df=file)
-    res = worker.query_goods(data_in={'Status':0})
-    print(res)
+    # data = {"OrderStatus": '0', "Operator": 100297, 'page': 1, 'pagesize': 10}
+    file = pd.read_excel(r"C:\Users\100236\Desktop\B分导入测试.xlsx")
+    # res_df = worker.query_order(data_in=data)
+    # print(res_df)
+    res = worker.import_rewardPoint_onesql(data_in={"Operator": '100297'}, file_df=file)

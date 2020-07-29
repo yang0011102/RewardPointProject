@@ -55,7 +55,7 @@ def dispatcher(selector, data, files=None):
                                               'table_dateType': file_dateType_rewardPoint})
         if not flag:
             return _response
-        if worker.import_rewardPoint(data_in=data,
+        if worker.import_rewardPoint_onesql(data_in=data,
                                      file_df=pd.read_excel(files.stream), ):
             _response = {"code": 0,
                          "msg": "",
