@@ -7,8 +7,8 @@ head={"Accept":"application/json",
       "Content-Type":"application/json",
       "Origin":"null",
       }
-data={"name":'陈明姣',"Operator":100297}
-_response = requests.post(url="http://192.168.40.161:8080/Interface/export_rewardPoint",
+data={'Status':0}
+_response = requests.post(url="http://192.168.40.161:8080/Interface/query_goods",
                           data=simplejson.dumps(data),headers=head
                           )
 print(_response.json())

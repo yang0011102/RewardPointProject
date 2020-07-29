@@ -37,5 +37,6 @@ class UploadInterface:
         img.save(file_path)
 
         # url是图片的路径
-        url = '/static/uploadImgs/' + filename
+        # url = '/static/uploadImgs/' + filename
+        url = 'http://192.168.40.161:8080/load/uploadImgs/' + filename
         return url
