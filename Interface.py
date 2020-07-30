@@ -517,7 +517,7 @@ group by dt.JobId
             if data_in.get("GoodsCode"):
                 query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
             # 商品状态
-            if data_in.get("Status") or data.get("Status") == 0:
+            if data_in.get("Status") or data_in.get("Status") == 0:
                 query_item.append(f"goods.Status = {data_in.get('Status')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
@@ -813,7 +813,7 @@ group by dt.JobId
                 value = file_df.loc[i, vi]
                 if pd.isna(value):
                     values_item.append("\'" + '' + "\'")
-                elif vi == 'RewardPointsTypeID':  # 连RewardPointsType表查积分类型ID
+                elif vi == 'A分/B分':  # 连RewardPointsType表查积分类型ID
                     RewardPointsTypeID = rewardPointType_df.loc[
                         rewardPointType_df['Name'] == value, 'RewardPointsTypeID'].values[0]
                     values_item.append(str(RewardPointsTypeID))
@@ -823,7 +823,7 @@ group by dt.JobId
                     values_item.append("\'" + value + "\'")
                 else:
                     values_item.append(str(value))
-            sql_values.append(','.join(values_item))
+            sql_values.append("("+','.join(values_item)+")")
         sql = base_sql.format(','.join(sql_values))
         print(sql)
         cur = self.db_mssql.cursor()
@@ -988,7 +988,5 @@ if __name__ == "__main__":
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
     data = {'page': 1, 'pageSize': 10, 'Status': 0}
-    if data.get("Status") or data.get("Status") == 0:
-        print(1)
-    # res = worker.query_goods(data_in=data)
-    # print(res)
+    res = worker.query_goods(data_in=data)
+    print(res)

@@ -8,7 +8,7 @@ head={"Accept":"application/json",
       "Origin":"null",
       }
 data={'page': 1, 'pageSize': 10,'Status':0}
-_response = requests.post(url="http://192.168.40.161:8080/Interface/query_goods",
-                          data=simplejson.dumps(data),headers=head
+_response = requests.get(url="http://127.0.0.1:5000/get_token/jobid:100236",
+                          # data=simplejson.dumps(data),headers=head
                           )
 print(_response.json())
