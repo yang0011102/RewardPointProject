@@ -976,9 +976,8 @@ group by dt.JobId
 
 if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
-    import os
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'pageSize': 10,"page":1}
-    res = worker._base_query_RewardPointSummary(data_in=data)
+    data = {'pageSize': 10,"page":1,"rewardPointsType":"B分"}
+    res = worker._base_query_rewardPointDetail(data_in=data)
     print(res)

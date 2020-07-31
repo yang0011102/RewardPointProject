@@ -38,5 +38,5 @@ class UploadInterface:
 
         # url是图片的路径
         # url = '/static/uploadImgs/' + filename
-        url = 'http://192.168.40.161:8080/load/uploadImgs/' + filename
+        url = 'http://222.186.81.37:5000/load/uploadImgs/' + filename
         return url
