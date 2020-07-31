@@ -197,25 +197,9 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
             tempidlist.append("\'" + _ii + "\'")
         all_id_tupe = ','.join(tempidlist)
         # A 管理分表
-        mssql_base_sql = '''
-select dt.JobId,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=1 then dt.ChangeAmount else 0 end)+
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=2 then dt.ChangeAmount else 0 end) as 现有管理积分,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'{0[0]}' then dt.BonusPoints else 0 end)-
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'{0[0]}' then dt.MinusPoints else 0 end) as 年度管理积分,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,
-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得管理积分
-from RewardPointDB.dbo.RewardPointsDetail dt
-where {0[1]}
-group by dt.JobId
-        '''
+        mssql_base_sql = '''select dt.*,dt.总可用管理积分-od.pointuse as 现有管理积分 from (select dt.JobId,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总可用管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'2019-12-31 00:00:00' then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'2019-12-31 00:00:00' then dt.MinusPoints else 0 end) as 年度管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得管理积分 from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 group by dt.JobId) as dt join (select JobId,sum(case when od.DataStatus=0 and od.OrderStatus in (0,1,2) then od.TotalPrice else 0 end) as pointuse from RewardPointDB.dbo.PointOrder od group by JobId) od on od.JobId=dt.JobId where {0[1]}'''
         sql_item = [datetime_string(datetime.datetime(year=today.year - 1, month=12, day=31)), ]
-        query_item = ['dt.DataStatus=0', f"dt.JobId in ({all_id_tupe})"]
+        query_item = [f"dt.JobId in ({all_id_tupe})"]
         sql_item.append(' and '.join(query_item))
         mssql_sql = mssql_base_sql.format(sql_item)
         pointdetail = pd.read_sql(mssql_sql, self.db_mssql)
@@ -916,4 +900,4 @@ if __name__ == "__main__":
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
     data = {'pageSize': 10,"page":1}
-    res = worker.query_goods(data_in=data)
+    res = worker._base_query_RewardPointSummary(data_in=data)
