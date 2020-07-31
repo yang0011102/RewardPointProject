@@ -183,8 +183,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
             left join bd_defdoc tittlerank on hi_psndoc_title.titlerank =tittlerank.pk_defdoc 
             {0[0]}
             ) temptable
-            where temptable.rowno >{0[1]}*({0[2]}-1)'''
-            query_item.append(f"rownum<={data_in.get('pageSize')}*{data_in.get('page')}")
+            where temptable.rowno >{0[1]}*({0[2]}-1) and temptable.rowno <{0[1]}*{0[2]}'''
             sql_item = [" where " + ' and '.join(query_item), data_in.get('pageSize'), data_in.get('page')]
         else:
             maninfo_base_sql = '''
@@ -979,9 +978,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
     import os
 
-    b_path = r"C:\Users\100236\Desktop"
-    file = pd.read_excel(os.path.join(b_path, "B分管理积分增减表（基础）.xlsx"))
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'Operator': '100236'}
-    res = worker.pre_import_rewardPoint(data_in=data, file_df=file)
+    data = {'pageSize': 10,"page":1}
+    res = worker._base_query_RewardPointSummary(data_in=data)
     print(res)
