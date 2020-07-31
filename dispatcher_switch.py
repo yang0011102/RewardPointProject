@@ -481,10 +481,8 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
     '''
     if mustFile is None:
         mustFile = {}
-    print("进入检查")
     _response = {}
     # 检查输入数据格式 check_type
-    print("检查输入数据格式")
     for (k, v) in data.items():
         if v == "":
             continue
@@ -495,28 +493,23 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
             _response = {"code": 2, "msg": f"错误参数类型。key:{k},value:{v}，请传送{checker.get('check_type').get(k)}类型"}
             return False, _response
     # 检查必填项 check_exist
-    print("检查必填项")
     for _exist in checker.get('check_exist'):
         if _exist not in list(data.keys()):
             _response = {"code": 3,
                          "msg": f"缺少必填参数。key:{_exist}，请传送{checker.get('check_type').get(_exist)}类型\n data:{data}"}
             return False, _response
     # 输入文件 check_filetype,table_column
-    print("检查输入文件")
     if file is not None:
         filename, filetype = os.path.splitext(file.filename)
-        print(f"检查输入文件类型:{mustFile.get('check_filetype')}")
         if not filetype in mustFile.get('check_filetype'):
             _response = {"code": 4, "msg": f"错误文件类型。key:{file.filename}，请传送{mustFile.get('check_filetype')}类型"}
             return False, _response
         if filetype in ('.xlsx', '.xls'):
-            print("建立临时表")
             temp_df = pd.read_excel(file.stream)
             if temp_df.empty:
                 _response = {"code": 5,
                              "msg": f"请勿传送空表"}
                 return False, _response
-            print("检查输入文件内容列")
             for i in mustFile.get('table_column'):
                 if i not in temp_df.columns.tolist():
                     _response = {"code": 6,
@@ -528,17 +521,12 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
                     return False, _response
             if mustFile.get('table_dateType'):
                 for i in mustFile.get('table_dateType').get('date_column'):
-                    print(temp_df[i].index.tolist())
                     for _index in temp_df[i].index.tolist():
                         d_v = temp_df[i][_index]
-                        print("正在检查列:", i, "行:", _index, "值:", d_v)
                         if isinstance(d_v, pd.Timestamp):
-                            print(d_v, "为pd.Timestamp类型")
                             break
-                        print("正在检查行", _index, "内容:", d_v)
                         _file_dateType_flag = True
                         for j in mustFile.get('table_dateType').get('dateType'):
-                            print("正在检查时间类型", j)
                             if isVaildDate(date=d_v, timeType=j):
                                 _file_dateType_flag = False
                                 break
@@ -549,11 +537,9 @@ def pre_check(checker: dict, file, data: dict, mustFile=None):
 
     # 检查参数时间格式 check_dateType
     if checker.get("check_dateType"):
-        print("检查参数时间格式")
         for i in checker.get("check_dateType"):
             if data.get(i):
                 if not isVaildDate(data.get(i)):
                     _response = {"code": 9, "msg": f"错误时间类型,key:{i},value:{data.get(i)}，请传送%Y-%m-%d %H:%M:%S类型"}
                     return False, _response
-    print("检查通过")
     return True, _response
