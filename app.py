@@ -6,7 +6,7 @@ from config.config import *
 from flask_cors import CORS
 from dispatcher_switch import dispatcher
 from tool.tool import *
-
+from verify import _token,serializer,login_required
 
 class MyResponse(Response):
     @classmethod
@@ -25,16 +25,9 @@ app.config['APPLICATION_ROOT'] = APPLICATION_ROOT
 app.response_class = MyResponse
 logging.basicConfig(filename=f"./log/web.{time.strftime('%Y_%m_%d')}.txt", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-
-# @app.route('/2048game')
-# def _show():
-#     return render_template('2048.html')
-#
-#
-# @app.route('/download/<filename>')
-# def _download(filename):
-#     print(filename)
-#     return send_from_directory(DOWNLOAD_FOLDER, filename=filename)
+@app.route('/get_token/jobid:<jobid>', methods=['GET'])
+def get_token(jobid):
+    return _token(jobid=jobid, serializer=serializer)
 
 
 @app.route('/Interface/<selector>', methods=['POST'])
