@@ -515,18 +515,7 @@ group by dt.JobId
                 query_item.append(f"goods.Status = {data_in.get('Status')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
-            base_sql = '''
-                            select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,
-                            goods.GoodsID,
-                            sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,
-                            sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,
-                            sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock
-                            from Goods goods
-                            left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID
-                            left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID
-                             {0[0]}
-                            group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status
-                              order by goods.GoodsID asc {0[1]}'''
+            base_sql = '''select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.GoodsID,goods.ChargeUnit,sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock from Goods goods left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID {0[0]} group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.ChargeUnit order by goods.GoodsID asc {0[1]}'''
             sql_item = [query_sql]
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
                 sql_item.append('')
@@ -978,6 +967,6 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'pageSize': 10,"page":1,"rewardPointsType":"B分"}
-    res = worker._base_query_rewardPointDetail(data_in=data)
+    data = {'pageSize': 10,"page":1}
+    res = worker.query_goods(data_in=data)
     print(res)
