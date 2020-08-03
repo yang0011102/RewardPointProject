@@ -37,7 +37,6 @@ class DDInterface:
         user_info = self.get_user_info(code=code, token=access_token)
         userid = user_info.get("userid")
         user = self.get_user(access_token=access_token, userid=userid)
-        print(user)
         return user
 
     def get_user_info(self, code, token):

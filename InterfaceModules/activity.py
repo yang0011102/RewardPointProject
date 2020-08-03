@@ -66,20 +66,17 @@ class ActivityInterface:
     def editActivityById(self, data_in: dict):
         cur = self.db_mssql.cursor()
         res = self.getActivityById(data_in=data_in)
-        print(data_in)
         valueList = []
 
         for key in data_in:
             if key != "id" and key != "CreationDate" and key != "CreatedBy" and key != "ActivitiesID":
                 item = "%s = \'%s"%(key, data_in[key])+"\'"
-                print(item)
                 valueList.append(item)
 
         base_sql = "update Activities set {} where ActivitiesID = %d"%(data_in.get("ActivitiesID"))
 
         sql = base_sql.format(','.join(valueList))
 
-        print(sql)
         cur.execute(sql)
         self.db_mssql.commit()
         return True
@@ -87,7 +84,6 @@ class ActivityInterface:
     def deleteActivityById(self, data_in: dict):
 
         base_sql = "update Activities set Status=2 where ActivitiesID = %d" % (data_in.get("ActivitiesID"))
-        print(base_sql)
         cur = self.db_mssql.cursor()
         cur.execute(base_sql)
         self.db_mssql.commit()

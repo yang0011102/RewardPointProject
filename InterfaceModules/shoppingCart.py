@@ -22,10 +22,8 @@ class ShoppingCartInterface:
 
     # 添加商品进入购物车
     def addCart(self, data_in:dict):
-        print("add_cart")
         # 判断数量是否超过库存
         isOverStock = self.isOverStock(data_in=data_in)
-        print(isOverStock)
 
         # 若不超过，判断商品是否已在购物车
         if isOverStock:
@@ -35,8 +33,6 @@ class ShoppingCartInterface:
             }
         else:
             flag, ShoppingCartID, GoodsAmount = self.hasExist(data_in=data_in)
-            print(flag)
-            print(ShoppingCartID)
 
             # 若在，修改数量
             if flag:
@@ -67,7 +63,6 @@ class ShoppingCartInterface:
                     if isinstance(item, str):  # 如果是字符串 加上引号
                         item = "\'" + item + "\'"
                 sql = base_sql.format(','.join(sql_item), ','.join(list(map(str, sql_values))))
-                print(sql)
                 cur.execute(sql)
 
                 self.db_mssql.commit()
@@ -98,7 +93,6 @@ class ShoppingCartInterface:
         shopping_cart_id = ShoppingCartID
         num = editNum
         base_sql = "update ShoppingCart set GoodsAmount=%d where shoppingCartID = %d" % (num, shopping_cart_id)
-        print(base_sql)
         cur = self.db_mssql.cursor()
         cur.execute(base_sql)
         self.db_mssql.commit()
@@ -106,9 +100,7 @@ class ShoppingCartInterface:
 
     # 删除购物车商品
     def deleteCart(self, data_in:dict):
-        print(data_in.get("ShoppingCartID"))
         base_sql = "update ShoppingCart set Status=2, DataStatus=1 where shoppingCartID = %s" % (data_in.get("ShoppingCartID"))
-        print(base_sql)
         cur = self.db_mssql.cursor()
         cur.execute(base_sql)
         self.db_mssql.commit()
@@ -116,7 +108,6 @@ class ShoppingCartInterface:
 
     # 查询购物车列表
     def getCartList(self, data_in:dict):
-        print("getCartList")
         JobId = data_in.get("Operator")
         sql = '''SELECT sc.ShoppingCartID,sc.GoodsID,sc.GoodsAmount,g.PictureUrl,g.Name,g.PointCost,g.ChargeUnit, ISNULL(ti.TotalIn, 0) AS TotalIn , ISNULL(tout.TotalOut, 0) AS TotalOut
                     FROM ShoppingCart sc
@@ -139,9 +130,7 @@ class ShoppingCartInterface:
                     AND g.DataStatus = 0
                     AND g.Status = 0
                     AND sc.JobId = %s'''%(JobId)
-        print(sql)
         res = pd.read_sql(sql=sql, con=self.db_mssql)
-        print(res)
         return res
 
     # 判断商品是否已在购物车
@@ -162,12 +151,10 @@ class ShoppingCartInterface:
 
     # 查询商品库存
     def getStockById(self, data_in:dict):
-        print("a")
         id = data_in.get("GoodsID")
         TotalIn = self.getGoodsTotalIn(id)
         TotalOut = self.getGoodsTotalOut(id)
         stock = TotalIn - TotalOut
-        print(TotalIn, TotalOut, stock)
         return stock
 
     # 查询商品的总入库
