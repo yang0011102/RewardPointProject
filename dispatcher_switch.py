@@ -193,7 +193,6 @@ def dispatcher(selector, data, files=None):
         return _response
 
     def upload() -> dict:
-        print("upload")
         _response = {"code": 0,
                      "msg": "",
                      "data": uploadWorker.editorData(data_in=data, img=files, ),
@@ -212,8 +211,6 @@ def dispatcher(selector, data, files=None):
         return _response
 
     def query_activity() -> dict:
-        print("getActivity")
-
         totalLength, res_df = activityWorker.getActivity(data_in=data)
         _response = {"code": 0,
                      "msg": "",
@@ -223,11 +220,8 @@ def dispatcher(selector, data, files=None):
         return _response
 
     def get_activity_info() -> dict:
-        print("get_activity_info")
-
         info = activityWorker.getActivityById(data_in=data)
         detail = df_tolist(info)
-        print(detail)
         _response = {"code": 0,
                      "msg": "",
                      "data": detail[0]
@@ -235,7 +229,6 @@ def dispatcher(selector, data, files=None):
         return _response
 
     def edit_activity() -> dict:
-        print("edit_activity")
         res = activityWorker.editActivityById(data_in=data)
         if res:
 
@@ -407,7 +400,6 @@ def dispatcher(selector, data, files=None):
 
     def delete_cart() -> dict:
         res = shoppingCartWorker.deleteCart(data_in=data)
-        print(res)
         if res:
             _response = {"code": 0,
                          "msg": ""

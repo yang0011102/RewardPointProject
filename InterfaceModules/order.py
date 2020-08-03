@@ -28,7 +28,6 @@ class OrderInterface:
 
         # 获取购物车信息
         shoppingCartList = self.getShoppingCartList(JobId=Operator)
-        print(shoppingCartList)
         totalNum = 0
         totalPrice = 0
         isOverStock = False
@@ -36,7 +35,6 @@ class OrderInterface:
         # 判断购物车商品是否超过库存,若超过库存，给出提示：某某商品超过库存，请修改购物车数量
         for item in shoppingCartList:
             if isOverStock:
-                print(isOverStock)
                 return
             else:
                 name = item.get("Name")
@@ -72,29 +70,23 @@ class OrderInterface:
 
         try:
             for spItem in shoppingCartList:
-                print("循环开始")
-
                 for item in sql_values:
                     if isinstance(item, str):  # 如果是字符串 加上引号
                         item = "\'" + item + "\'"
                 sql_order_goods_values = [PointOrderID, spItem.get("GoodsID"), spItem.get("GoodsAmount"), Operator, 0]
                 insert_order_goods_sql = insert_order_goods_base_sql.format(','.join(sql_order_goods_item), ','.join(list(map(str, sql_order_goods_values))))
-                print(insert_order_goods_sql)
                 cur.execute(insert_order_goods_sql)
                 # 商品出库表新增数据，状态均为锁定
                 sql_stock_out_values = [spItem.get("GoodsID"), cur.lastrowid, 1, spItem.get("GoodsAmount"), 0, Operator, PointOrderID]
                 insert_stock_out_sql = insert_stock_out_base_sql.format(','.join(sql_tock_out_item), ','.join(list(map(str, sql_stock_out_values))))
-                print(insert_stock_out_sql)
                 cur.execute(insert_stock_out_sql)
                 # 将购物车的记录状态变成无效
                 update_shopping_cart_status_sql = "update ShoppingCart set DataStatus=1 where ShoppingCartID = %d" % (spItem.get("ShoppingCartID"))
-                print(update_shopping_cart_status_sql)
                 cur.execute(update_shopping_cart_status_sql)
             self.db_mssql.commit()
             return True, ''
         except Exception as e:
             self.db_mssql.rollback()
-            print(e)
             return False, e
 
     #查询订单列表
@@ -103,9 +95,7 @@ class OrderInterface:
     # 查看订单详情
     # 确定订单
     def confirmOrder(self, data_in:dict):
-        print(data_in)
         base_sql = "update PointOrder set OrderStatus=2 where PointOrderID = %d" % (data_in.get("PointOrderID"))
-        print(base_sql)
         cur = self.db_mssql.cursor()
         cur.execute(base_sql)
         self.db_mssql.commit()
@@ -124,7 +114,6 @@ class OrderInterface:
             return True
         except Exception as e:
             self.db_mssql.rollback()
-            print(e)
             return False
 
 
@@ -137,17 +126,14 @@ class OrderInterface:
             cur.execute(update_order_status_sql)
             #订单商品出库
             update_tock_info_sql = "update StockOutDetail set ChangeType=0, StockOutOperator=\'%s\', StockOutTime=\'%s\' where PointOrderID = %d" % (data_in.get("Operator"), data_in.get("time"), data_in.get("PointOrderID"))
-            print(update_tock_info_sql)
             cur.execute(update_tock_info_sql)
             self.db_mssql.commit()
             return True
         except Exception as e:
             self.db_mssql.rollback()
-            print(e)
             return False
     # 根据工号获取购物车列表
     def getShoppingCartList(self, JobId):
-        print("getCartList")
         sql = '''SELECT sc.ShoppingCartID,sc.GoodsID,sc.GoodsAmount,g.PictureUrl,g.Name,g.PointCost,g.ChargeUnit, ISNULL(ti.TotalIn, 0) AS TotalIn , ISNULL(tout.TotalOut, 0) AS TotalOut
                            FROM ShoppingCart sc
                            INNER JOIN Goods g ON sc.GoodsID = g.GoodsID

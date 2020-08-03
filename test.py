@@ -1,15 +1,9 @@
 # utf-8
-# from config.dbconfig import mssqldb, ncdb
-# from Interface import RewardPointInterface
-# import pandas as pd
+from InterfaceModules.shoppingCart import ShoppingCartInterface
+from InterfaceModules.dd import *
+from config.dbconfig import *
 
-index_list=[0,1,2,3,4,5,6,7,8,9]
-ss=1
-ct=[]
-c=0
-while True:
-    if c > len(index_list)-1:
-        break
-    ct.append(index_list[c: c + ss])
-    c+=ss
-print(ct)
+ww = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+dd = {'code': "a4734373ca473f13b8947a4ac380fbf0",
+      'corpId': "dingcd0f5a2514db343b35c2f4657eb6378f"}
+c=ww.getUserInfo(dd)
