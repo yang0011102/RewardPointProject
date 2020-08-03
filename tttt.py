@@ -17,4 +17,3 @@ _response = requests.post(url="http://222.186.81.37:5000/Interface/getUserInfo",
                                                  'corpId': "dingcd0f5a2514db343b35c2f4657eb6378f"}), headers=head
                           )
 
-print(_response.json())

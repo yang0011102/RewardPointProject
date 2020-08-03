@@ -178,11 +178,8 @@ def getChlidType(dbcon: pymssql.Connection) -> dict:
 
 def get_dfUrl(df: pd.DataFrame, Operator: str) -> str:
     filename = Operator + str(time.time()) + ".xlsx"
-    print('文件名', filename)
     filepath = DOWNLOAD_FOLDER + '/' + filename
-    print('文件路径', filepath)
     df.to_excel(filepath, index=False,encoding='utf-8')
-    print('保存到', filepath)
     return "/download/" + filename  # 传回相对路径
 
 
@@ -213,9 +210,7 @@ def isEmpty(obj):
 @verison_warning
 class MyEncoder(json.JSONEncoder):
     def default(self, obj: object):
-        print("get defalut")
         if isinstance(obj, float) and np.isnan(obj):
-            print("get nan")
             return 0
         elif isinstance(obj, np.integer):
             return int(obj)
