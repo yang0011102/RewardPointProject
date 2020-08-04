@@ -10,7 +10,7 @@ setup(
         # , "./InterfaceModules/order.py", "./InterfaceModules/shoppingCart.py", "./InterfaceModules/upload.py",
         # "./config/config.py","./config/dbconfig.py",
         # "Interface.py",
-        "dispatcher_switch.py",
+        # "dispatcher_switch.py",
         "verify.py",
     ], language_level=3
     ),

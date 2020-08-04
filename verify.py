@@ -46,10 +46,8 @@ def _token(jobid: str, serializer):
     if isexist > 0:
         try:
             token = serializer.dumps({'jobid': jobid})
-            _response = {'code': 0, 'msg': '', 'token': token}
-            return simplejson.dumps(_response)
+            return token
         except Exception as e:
-            return simplejson.dumps({'code': 9995, 'msg': e.args, 'token': ''})
+            return e.args
     else:
-        _response = {'code': 9994, 'msg': '无效的jobid', 'token': ''}
-        return simplejson.dumps(_response)
+        return '无效的jobid'
