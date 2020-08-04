@@ -546,7 +546,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
         return orderDetail_df
 
     def _base_query_FixedPoints_ByYear(self, data_in: dict) -> int:
-        sql = f"select sum(dt.BonusPoints)-sum(dt.MinusPoints) as AnnualSum from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 and dt.RewardPointsTypeID =3 and dt.AssessmentDate>'{data_in.get('year')}-01-01 00:00:00' and dt.AssessmentDate<'{data_in.get('year')}-01-01 00:00:00' and dt.JobId='{data_in.get('jobid')}'"
+        sql = f"select sum(dt.BonusPoints)-sum(dt.MinusPoints) as AnnualSum from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 and dt.RewardPointsTypeID =3 and dt.AssessmentDate>'{data_in.get('year')}-01-01 00:00:00' and dt.AssessmentDate<'{data_in.get('year')+1}-01-01 00:00:00' and dt.JobId='{data_in.get('jobid')}'"
         res_df = pd.read_sql(sql=sql, con=self.db_mssql)
         return res_df.loc[0, 'AnnualSum']
 
@@ -904,7 +904,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'jobid': 100297, 'year': 2019}
+    data = {'jobid': 100297, 'year': 2020}
     # res = worker.query_rewardPoint(data_in=data)
     res2 = worker._base_query_FixedPoints_ByYear(data_in=data)
     print(res2)
