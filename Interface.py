@@ -288,7 +288,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                             temp_standard = self.rewardPointStandard.loc[
                                 self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                                     _index, '职等'], 'PointsAmount'].values[0]
-                    jobrankpoint += int(temp_standard * months)
+                    jobrankpoint += int(temp_standard * months/12)
             maninfo_df.loc[man_select, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             maninfo_df.loc[man_select, '总累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
                 man_select, '总获得管理积分']
@@ -457,7 +457,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                             temp_standard = self.rewardPointStandard.loc[
                                 self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                                     _index, '职等'], 'PointsAmount'].values[0]
-                    jobrankpoint += int(temp_standard * months)
+                    jobrankpoint += int(temp_standard * months/12)
             res_df.loc[_index, '职务积分'] = jobrankpoint
         return totalLength, res_df
 
@@ -606,15 +606,14 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                     Tittle_data['tittleRank'] = _rk
         ServingAge_base_sql = '''
         select 
-        hi_psnjob.begindate,hi_psnjob.enddate
-        from hi_psnjob
-        join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
+        hi_psndoc_psnchg.begindate,hi_psndoc_psnchg.enddate
+        from hi_psndoc_psnchg
+        join bd_psndoc on hi_psndoc_psnchg.pk_psndoc=bd_psndoc.pk_psndoc
         where
-        hi_psnjob.ismainjob ='Y' 
+        (hi_psndoc_psnchg.enddate>'2004-01-01' or hi_psndoc_psnchg.enddate is null)
         and bd_psndoc.enablestate =2
-        and (hi_psnjob.enddate>'2004-01-01' or hi_psnjob.endflag='N')
         and bd_psndoc.code='{}'
-        order by bd_psndoc.code,hi_psnjob.begindate
+        order by bd_psndoc.code,hi_psndoc_psnchg.begindate
                     '''
         ServingAge_sql = ServingAge_base_sql.format(man)
         manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
@@ -679,7 +678,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                     temp_standard = self.rewardPointStandard.loc[
                         self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                             _index, '职等'], 'PointsAmount'].values[0]
-                temp_jobrankpoint = int(temp_standard * months)
+                temp_jobrankpoint = int(temp_standard * months/12)
             jobrank_data.append({'begindate': datetime_string(temp_begindate, timeType="%Y-%m-%d"),
                                  'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
                                  'islatest': islatest,
@@ -899,7 +898,7 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'jobid': 100236}
-    res = worker.query_rewardPoint(data_in=data)
-    res2=worker.query_RewardPointSummary(data_in=data)
+    data = {'jobid': 100016}
+    # res = worker.query_rewardPoint(data_in=data)
+    res2=worker.query_B_rewardPointDetail(data_in=data)
     print(res2)
