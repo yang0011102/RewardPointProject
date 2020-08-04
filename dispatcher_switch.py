@@ -9,7 +9,6 @@ from InterfaceModules.activity import ActivityInterface
 from InterfaceModules.upload import UploadInterface
 from InterfaceModules.shoppingCart import ShoppingCartInterface
 from InterfaceModules.order import OrderInterface
-from InterfaceModules.dd import DDInterface
 from config.dbconfig import *
 from pre_check import *
 from tool.tool import *
@@ -132,7 +131,7 @@ def dispatcher(selector, data, files=None):
         if flag:
             _response = {"code": 0,
                          "msg": "",
-                         "data": worker.query_B_rewardPointDetail(data_in=data)
+                         "data": worker.query_FixedPointDetail(data_in=data)
                          }
         return _response
 

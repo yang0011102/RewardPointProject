@@ -138,7 +138,6 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
 {0[0]}
 '''
         today = datetime.datetime.today()  # 今天
-        newYearsDay = datetime.datetime(year=today.year, month=1, day=1)  # 今年元旦
         query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                       "bd_psndoc.enablestate =2", "edu.lasteducation='Y'"]
         if data_in.get('name'):  # 姓名
@@ -195,7 +194,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
             tempidlist.append("\'" + _ii + "\'")
         all_id_tupe = ','.join(tempidlist)
         # A 管理分表
-        mssql_base_sql = '''select dt.*,dt.总可用管理积分-isnull(od.pointuse,0)  as 现有管理积分 from (select dt.JobId,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总可用管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'2019-12-31 00:00:00' then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'2019-12-31 00:00:00' then dt.MinusPoints else 0 end) as 年度管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end) as 总获得管理积分 from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 group by dt.JobId) as dt left join (select JobId,sum(case when od.DataStatus=0 and od.OrderStatus in (0,1,2) then od.TotalPrice else 0 end) as pointuse from RewardPointDB.dbo.PointOrder od group by JobId) od on od.JobId=dt.JobId where {0[1]}'''
+        mssql_base_sql = '''select dt.*,dt.总可用管理积分-isnull(od.pointuse,0)  as 现有管理积分 from (select dt.JobId,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总可用管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'2019-12-31 00:00:00' then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>'2019-12-31 00:00:00' then dt.MinusPoints else 0 end) as 年度管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总获得管理积分 from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 group by dt.JobId) as dt left join (select JobId,sum(case when od.DataStatus=0 and od.OrderStatus in (0,1,2) then od.TotalPrice else 0 end) as pointuse from RewardPointDB.dbo.PointOrder od group by JobId) od on od.JobId=dt.JobId where {0[1]}'''
         sql_item = [datetime_string(datetime.datetime(year=today.year - 1, month=12, day=31)), ]
         query_item = [f"dt.JobId in ({all_id_tupe})"]
         sql_item.append(' and '.join(query_item))
@@ -546,7 +545,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
         return orderDetail_df
 
     def _base_query_FixedPoints_ByYear(self, data_in: dict) -> int:
-        sql = f"select sum(dt.BonusPoints)-sum(dt.MinusPoints) as AnnualSum from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 and dt.RewardPointsTypeID =3 and dt.AssessmentDate>'{data_in.get('year')}-01-01 00:00:00' and dt.AssessmentDate<'{data_in.get('year')+1}-01-01 00:00:00' and dt.JobId='{data_in.get('jobid')}'"
+        sql = f"select sum(dt.BonusPoints)-sum(dt.MinusPoints) as AnnualSum from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 and dt.RewardPointsTypeID =3 and dt.AssessmentDate>'{data_in.get('year')}-01-01 00:00:00' and dt.AssessmentDate<'{data_in.get('year') + 1}-01-01 00:00:00' and dt.JobId='{data_in.get('jobid')}'"
         res_df = pd.read_sql(sql=sql, con=self.db_mssql)
         return res_df.loc[0, 'AnnualSum']
 
@@ -557,7 +556,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
         _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
 
-    def query_B_rewardPointDetail(self, data_in: dict) -> dict:
+    def query_FixedPointDetail(self, data_in: dict) -> dict:
         today = datetime.datetime.today()  # 今天
         man_data = {}
         man = data_in.get('jobid')

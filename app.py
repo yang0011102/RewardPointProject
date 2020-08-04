@@ -1,7 +1,7 @@
 # utf-8
 import logging
 
-from flask import Flask, render_template, request, jsonify, Response, send_from_directory
+from flask import Flask, request, jsonify, Response
 
 from InterfaceModules.dd import DDInterface
 from config.config import *

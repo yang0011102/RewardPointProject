@@ -121,7 +121,7 @@ def dispatcher(selector:str, data:dict, files=None):
         if flag:
             _response = {"code": 0,
                          "msg": "",
-                         "data": worker.query_B_rewardPointDetail(data_in=data)
+                         "data": worker.query_FixedPointDetail(data_in=data)
                          }
     elif selector == "import_goods":
         flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_import_goods,

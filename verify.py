@@ -1,4 +1,3 @@
-import simplejson
 import cx_Oracle
 import pandas as pd
 from config.dbconfig import ncdb as ncDbInfo
