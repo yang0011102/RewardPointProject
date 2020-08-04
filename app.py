@@ -45,7 +45,7 @@ def getUserInfo() -> dict:
                  "token": _token(jobid=res.get("jobnumber"), serializer=serializer)
                  }
 
-    return _response
+    return simplejson.dumps(_response, cls=SuperEncoder, ignore_nan=True)
 
 
 @app.route('/Interface/<selector>', methods=['POST'])
