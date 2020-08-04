@@ -4,8 +4,6 @@
 '''
 
 import cx_Oracle
-import pymssql
-
 from tool.tool import *
 
 
@@ -288,7 +286,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                             temp_standard = self.rewardPointStandard.loc[
                                 self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                                     _index, '职等'], 'PointsAmount'].values[0]
-                    jobrankpoint += int(temp_standard * months/12)
+                    jobrankpoint += np.around(temp_standard * months / 12)
             maninfo_df.loc[man_select, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             maninfo_df.loc[man_select, '总累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
                 man_select, '总获得管理积分']
@@ -457,7 +455,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                             temp_standard = self.rewardPointStandard.loc[
                                 self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                                     _index, '职等'], 'PointsAmount'].values[0]
-                    jobrankpoint += int(temp_standard * months/12)
+                    jobrankpoint += np.around(temp_standard * months / 12)
             res_df.loc[_index, '职务积分'] = jobrankpoint
         return totalLength, res_df
 
@@ -546,6 +544,11 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
         sql = _base_sql.format(" where " + " and ".join(query_item))
         orderDetail_df = pd.read_sql(sql, con=self.db_mssql)
         return orderDetail_df
+
+    def _base_query_FixedPoints_ByYear(self, data_in: dict) -> int:
+        sql = f"select sum(dt.BonusPoints)-sum(dt.MinusPoints) as AnnualSum from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 and dt.RewardPointsTypeID =3 and dt.AssessmentDate>'{data_in.get('year')}-01-01 00:00:00' and dt.JobId='{data_in.get('jobid')}'"
+        res_df = pd.read_sql(sql=sql, con=self.db_mssql)
+        return res_df.loc[0, 'AnnualSum']
 
     def query_RewardPointSummary(self, data_in: dict) -> (int, pd.DataFrame):
         return self._base_query_RewardPointSummary(data_in)
@@ -678,7 +681,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                     temp_standard = self.rewardPointStandard.loc[
                         self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
                             _index, '职等'], 'PointsAmount'].values[0]
-                temp_jobrankpoint = int(temp_standard * months/12)
+                temp_jobrankpoint = np.around(temp_standard * months / 12)
             jobrank_data.append({'begindate': datetime_string(temp_begindate, timeType="%Y-%m-%d"),
                                  'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
                                  'islatest': islatest,
@@ -893,12 +896,15 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
         _, res_df = self._base_query_FixedPoints(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
 
+    def query_FixedPoints_ByYear(self, data_in: dict) -> int:
+        return self._base_query_FixedPoints_ByYear(data_in=data_in)
+
 
 if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'jobid': 100016}
+    data = {'jobid': 100236, 'year': 2019}
     # res = worker.query_rewardPoint(data_in=data)
-    res2=worker.query_B_rewardPointDetail(data_in=data)
+    res2 = worker._base_query_FixedPoints_ByYear(data_in=data)
     print(res2)

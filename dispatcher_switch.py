@@ -439,6 +439,19 @@ def dispatcher(selector, data, files=None):
                          }
         return _response
 
+    def query_FixedPoints_ByYear():
+        flag, _response = pre_check(data=data, file=files, checker={'check_type': pre_query_FixedPoints_ByYear,
+                                                                    'check_exist': check_query_FixedPoints_ByYear,
+                                                                    })
+
+        if flag:
+            res = worker.query_FixedPoints_ByYear(data_in=data)
+            _response = {"code": 0,
+                         "msg": "",
+                         "data": res
+                         }
+        return _response
+
     switch = {"query_rewardPoint": query_rewardPoint, "import_rewardPoint": import_rewardPoint,
               "delete_rewardPoint": delete_rewardPoint, "export_rewardPoint": export_rewardPoint,
               "account_rewardPoint": account_rewardPoint, "query_RewardPointSummary": query_RewardPointSummary,
@@ -451,7 +464,7 @@ def dispatcher(selector, data, files=None):
               "confirm_order": confirm_order, "reject_order": reject_order, "finish_order": finish_order,
               "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage,
               "query_orderDetail": query_orderDetail, "query_FixedPoints": query_FixedPoints,
-              "export_FixedPoints": export_FixedPoints,
+              "export_FixedPoints": export_FixedPoints,"query_FixedPoints_ByYear":query_FixedPoints_ByYear,
               "delete_cart": delete_cart}
     if switch.get(selector):
         return switch.get(selector)()

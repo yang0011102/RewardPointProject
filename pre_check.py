@@ -102,3 +102,7 @@ check_query_FixedPoints = []  # 必填
 # 导出固定积分
 pre_export_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int,"Operator":str}
 check_export_FixedPoints = ["Operator"]  # 必填
+
+# 按年查询管理积分总和
+pre_query_FixedPoints_ByYear= {"jobid": int,'year':int}
+check_query_FixedPoints_ByYear = ["jobid",'year']  # 必填

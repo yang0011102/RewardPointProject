@@ -29,7 +29,7 @@ def df_tolist(df: pd.DataFrame):
     return res_list
 
 
-def datetime_string(t: datetime.datetime, timeType="%Y-%m-%d %H:%M:%S"):
+def datetime_string(t: datetime.datetime, timeType="%Y-%m-%d %H:%M:%S")->str:
     return t.strftime(timeType)
 
 
