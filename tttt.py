@@ -13,7 +13,7 @@ head = {"Accept": "application/json",
 #                           data=simplejson.dumps(data), headers=head
 #                           )
 _response = requests.post(url="http://222.186.81.37:5000/Interface/query_FixedPoints_ByYear",
-                          data=simplejson.dumps({'jobid': 100236, 'year': 2019}), headers=head
+                          data=simplejson.dumps({'jobid': 100297, 'year': 2019}), headers=head
                           )
 
 print(_response.json())
