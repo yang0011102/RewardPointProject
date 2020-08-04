@@ -43,7 +43,7 @@ def login_required(view_func):
 def _token(jobid: str, serializer):
     base_sql = "select count(rownum) as ISEXIST from hi_psnjob right join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc where hi_psnjob.endflag ='N' and hi_psnjob.ismainjob ='Y' and hi_psnjob.lastflag  ='Y' and bd_psndoc.enablestate =2 and bd_psndoc.code='{}'"
     isexist = pd.read_sql(base_sql.format(jobid), db_nc).loc[0, 'ISEXIST']
-    if isexist == 1:
+    if isexist > 0:
         try:
             token = serializer.dumps({'jobid': jobid})
             _response = {'code': 0, 'msg': '', 'token': token}

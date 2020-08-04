@@ -8,8 +8,10 @@ setup(
     ext_modules=cythonize([
         # "./InterfaceModules/activity.py", "./InterfaceModules/dd.py"
         # , "./InterfaceModules/order.py", "./InterfaceModules/shoppingCart.py", "./InterfaceModules/upload.py",
-        "Interface.py",
-        # "dispatcher_switch.py",
+        # "./config/config.py","./config/dbconfig.py",
+        # "Interface.py",
+        "dispatcher_switch.py",
+        "verify.py",
     ], language_level=3
     ),
 )

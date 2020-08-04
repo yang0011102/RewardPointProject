@@ -1,12 +1,16 @@
-#utf-8
+# utf-8
 import logging
 
 from flask import Flask, render_template, request, jsonify, Response, send_from_directory
+
+from InterfaceModules.dd import DDInterface
 from config.config import *
+from config.dbconfig import *
 from flask_cors import CORS
 from dispatcher_switch import dispatcher
 from tool.tool import *
-from verify import _token,serializer,login_required
+from verify import _token, serializer, login_required
+
 
 class MyResponse(Response):
     @classmethod
@@ -23,23 +27,38 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['ALLOWED_EXTENSIONS'] = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xlsx', 'xls'}
 app.config['APPLICATION_ROOT'] = APPLICATION_ROOT
 app.response_class = MyResponse
-logging.basicConfig(filename=f"./log/web.{time.strftime('%Y_%m_%d')}.txt", format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=f"./log/web.{time.strftime('%Y_%m_%d')}.txt",
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-@app.route('/get_token/jobid:<jobid>', methods=['GET'])
-def get_token(jobid):
-    return _token(jobid=jobid, serializer=serializer)
+ddWorker = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+
+
+@app.route('/getUserInfo', methods=['POST'])
+def getUserInfo() -> dict:
+    data = request.form.to_dict()
+    if data == {}:
+        data = simplejson.loads(request.get_data(as_text=True))
+    res = ddWorker.getUserInfo(data_in=data)
+    _response = {"code": 0,
+                 "msg": "",
+                 "data": res,
+                 "token": _token(jobid=res.get("jobnumber"), serializer=serializer)
+                 }
+
+    return _response
 
 
 @app.route('/Interface/<selector>', methods=['POST'])
+@login_required
 def _inferface(selector):
     data = request.form.to_dict()
     if data == {}:
         data = simplejson.loads(request.get_data(as_text=True))
     file = request.files.get('file')
-    _response = simplejson.dumps(dispatcher(selector=selector, data=data, files=file), cls=SuperEncoder,ignore_nan=True)
+    _response = simplejson.dumps(dispatcher(selector=selector, data=data, files=file), cls=SuperEncoder,
+                                 ignore_nan=True)
     return _response
 
-if __name__ =="__main__":
-    app.run(host="127.0.0.1",port="5000")
 
-
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port="5000")

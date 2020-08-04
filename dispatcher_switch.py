@@ -19,7 +19,7 @@ uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-ddWorker = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+
 
 
 def dispatcher(selector, data, files=None):
@@ -365,13 +365,7 @@ def dispatcher(selector, data, files=None):
             }
         return _response
 
-    def getUserInfo() -> dict:
-        res = ddWorker.getUserInfo(data_in=data)
-        _response = {"code": 0,
-                     "msg": "",
-                     "data": res
-                     }
-        return _response
+
 
     def upload_goodsImage() -> dict:
         pure_data = data.copy()
@@ -462,9 +456,9 @@ def dispatcher(selector, data, files=None):
               "delete_activity": delete_activity, "add_cart": add_cart, "query_cart": query_cart,
               "edit_cart_num": edit_cart_num, "create_order": create_order, "query_order": query_order,
               "confirm_order": confirm_order, "reject_order": reject_order, "finish_order": finish_order,
-              "getUserInfo": getUserInfo, "upload_goodsImage": upload_goodsImage,
+              "upload_goodsImage": upload_goodsImage,
               "query_orderDetail": query_orderDetail, "query_FixedPoints": query_FixedPoints,
-              "export_FixedPoints": export_FixedPoints,"query_FixedPoints_ByYear":query_FixedPoints_ByYear,
+              "export_FixedPoints": export_FixedPoints, "query_FixedPoints_ByYear": query_FixedPoints_ByYear,
               "delete_cart": delete_cart}
     if switch.get(selector):
         return switch.get(selector)()
