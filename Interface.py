@@ -261,30 +261,19 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                 if jobrank_begindate.__le__(self.jobrank_count_time):  # 如果早于jobrank_count_time,那么从2018-01-01开始算
                     jobrank_begindate = self.jobrank_begin_time
                 man_workinfo.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
-                for _index in man_workinfo.index:
-                    if pd.isna(man_workinfo.loc[_index, 'ENDDATE']):
+                for work_index in man_workinfo.index:
+                    if pd.isna(man_workinfo.loc[work_index, 'ENDDATE']):
                         # temp_enddate = today
                         temp_enddate = datetime.datetime(year=today.year, month=12, day=31)
                     else:
-                        temp_enddate = datetime.datetime.strptime(man_workinfo.loc[_index, 'ENDDATE'], "%Y-%m-%d")
-                    if isinstance(man_workinfo.loc[_index, 'BEGINDATE'], str):
-                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[_index, 'BEGINDATE'], "%Y-%m-%d")
+                        temp_enddate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
+                    if isinstance(man_workinfo.loc[work_index, 'BEGINDATE'], str):
+                        temp_begindate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'], "%Y-%m-%d")
                     else:
-                        temp_begindate = man_workinfo.loc[_index, 'BEGINDATE']
-                    # if temp_begindate.__ge__(newYearsDay):  # 过了元旦不算
-                    #     continue
-                    # elif temp_enddate.__ge__(newYearsDay):
-                    #     temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
+                        temp_begindate = man_workinfo.loc[work_index, 'BEGINDATE']
+
                     months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
-                    temp_standard = 0
-                    jobrank = man_workinfo.loc[_index, '职等']
-                    if len(jobrank) != 0:  # 如果职等字段不为空
-                        temp_standard = 0
-                        if len(self.rewardPointStandard.loc[
-                                   self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount'].values) == 1:
-                            temp_standard = self.rewardPointStandard.loc[
-                                self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
-                                    _index, '职等'], 'PointsAmount'].values[0]
+                    temp_standard = man_workinfo.loc[work_index, 'PointsAmount']
                     jobrankpoint += np.around(temp_standard * months / 12)
             maninfo_df.loc[man_select, '固定积分'] = SchoolPoints + TittlePoints + ServingAgePoints + jobrankpoint
             maninfo_df.loc[man_select, '总累计积分'] = maninfo_df.loc[man_select, '固定积分'] + maninfo_df.loc[
@@ -435,7 +424,6 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                 man_workinfo.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
                 for work_index in man_workinfo.index:
                     if pd.isna(man_workinfo.loc[work_index, 'ENDDATE']):
-                        # temp_enddate = today
                         temp_enddate = datetime.datetime(year=today.year, month=12, day=31)
                     else:
                         temp_enddate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
@@ -445,15 +433,7 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
                     else:
                         temp_begindate = man_workinfo.loc[work_index, 'BEGINDATE']
                     months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
-                    temp_standard = 0
-                    jobrank = man_workinfo.loc[work_index, '职等']
-                    if len(jobrank) != 0:  # 如果职等字段不为空
-                        temp_standard = 0
-                        if len(self.rewardPointStandard.loc[
-                                   self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount'].values) == 1:
-                            temp_standard = self.rewardPointStandard.loc[
-                                self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
-                                    _index, '职等'], 'PointsAmount'].values[0]
+                    temp_standard = man_workinfo.loc[work_index, 'PointsAmount']
                     jobrankpoint += np.around(temp_standard * months / 12)
             res_df.loc[_index, '职务积分'] = jobrankpoint
         return totalLength, res_df
@@ -633,59 +613,41 @@ left join bd_defdoc tectittle on tectittle.pk_defdoc=hi_psndoc_title.pk_techpost
         serving_data['servingAgePoints'] = ServingAgePoints
         #  职务积分
         jobrank_data = []  # 职务积分详情容器
-        jobrank_base_sql = '''
-        select 
-        hi_psnjob.begindate,hi_psnjob.enddate,
-        om_jobrank.jobrankname as 职等,om_job.jobname
-        from hi_psnjob
-        join bd_psndoc on hi_psnjob.pk_psndoc = bd_psndoc.pk_psndoc
-        join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank
-        join om_job on om_job.pk_job = hi_psnjob.pk_job 
-        where
-        hi_psnjob.ismainjob ='Y' 
-        and bd_psndoc.enablestate =2
-        and (hi_psnjob.enddate>'2018-01-01' or hi_psnjob.endflag='N')
-        and bd_psndoc.code='{}'
-        order by bd_psndoc.code,hi_psnjob.begindate
-        '''
-        jobrank_sql = jobrank_base_sql.format(man)
-        jobrank_df = pd.read_sql(jobrank_sql, self.db_nc)
+        jobrank_base_sql = '''select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank  where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'') and bd_psndoc.code in ({}) order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0 '''
+        tempidlist = []
+        all_id=[str(man)]
+        for _ii in all_id:
+            tempidlist.append("\'\'" + _ii + "\'\'")
+        all_id_tupe = ','.join(tempidlist)
+        jobrank_sql = jobrank_base_sql.format(all_id_tupe)
+        jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
 
         jobrank_begindate = datetime.datetime.strptime(jobrank_df.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
         if jobrank_begindate.__le__(self.jobrank_count_time):  # 如果早于2018-01-01,那么从2018-01-01开始算
             jobrank_begindate = self.jobrank_begin_time
         jobrank_df.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
-        for _index in jobrank_df.index:
-            if pd.isna(jobrank_df.loc[_index, 'ENDDATE']):
+        for work_index in jobrank_df.index:
+            if pd.isna(jobrank_df.loc[work_index, 'ENDDATE']):
                 temp_enddate = datetime.datetime(year=today.year, month=12, day=31)
                 islatest = True
             else:
-                temp_enddate = datetime.datetime.strptime(jobrank_df.loc[_index, 'ENDDATE'], "%Y-%m-%d")
+                temp_enddate = datetime.datetime.strptime(jobrank_df.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
                 islatest = False
-            if isinstance(jobrank_df.loc[_index, 'BEGINDATE'], str):
-                temp_begindate = datetime.datetime.strptime(jobrank_df.loc[_index, 'BEGINDATE'], "%Y-%m-%d")
+            if isinstance(jobrank_df.loc[work_index, 'BEGINDATE'], str):
+                temp_begindate = datetime.datetime.strptime(jobrank_df.loc[work_index, 'BEGINDATE'], "%Y-%m-%d")
             else:
-                temp_begindate = jobrank_df.loc[_index, 'BEGINDATE']
-            # if temp_begindate.__ge__(newYearsDay):  # 过了元旦不算
-            #     continue
-            # elif temp_enddate.__ge__(newYearsDay):
-            #     temp_enddate = datetime.datetime(year=today.year - 1, month=12, day=31)
+                temp_begindate = jobrank_df.loc[work_index, 'BEGINDATE']
             months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
             temp_jobrankpoint = 0
-            jobrank = jobrank_df.loc[_index, '职等']
+            jobrank = jobrank_df.loc[work_index, '职等']
             if len(jobrank) != 0:  # 如果职等字段不为空
-                temp_standard = 0
-                if len(self.rewardPointStandard.loc[
-                           self.rewardPointStandard['CheckItem'] == jobrank, 'PointsAmount'].values) == 1:
-                    temp_standard = self.rewardPointStandard.loc[
-                        self.rewardPointStandard['CheckItem'] == jobrank_df.loc[
-                            _index, '职等'], 'PointsAmount'].values[0]
+                temp_standard = jobrank_df.loc[work_index, 'PointsAmount']
                 temp_jobrankpoint = np.around(temp_standard * months / 12)
             jobrank_data.append({'begindate': datetime_string(temp_begindate, timeType="%Y-%m-%d"),
                                  'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
                                  'islatest': islatest,
                                  'jobrank': jobrank,
-                                 'jobname': jobrank_df.loc[_index, 'JOBNAME'],
+                                 'jobname': jobrank_df.loc[work_index, '职等'],
                                  'jobrankpoint': temp_jobrankpoint})
 
         # 存起来
@@ -903,7 +865,10 @@ if __name__ == "__main__":
     from config.dbconfig import mssqldb, ncdb
 
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    data = {'jobid': 100297, 'year': 2020}
+    data = {'page':7,"pageSize":10}
+    # data={'jobid':100059}
     # res = worker.query_rewardPoint(data_in=data)
-    res2 = worker._base_query_FixedPoints_ByYear(data_in=data)
-    print(res2)
+    # res2 = worker.query_FixedPointDetail(data_in=data)
+    # res3 = worker.query_RewardPointSummary(data_in=data)
+    _,res4=worker.query_FixedPoints(data_in=data)
+    print(1)
