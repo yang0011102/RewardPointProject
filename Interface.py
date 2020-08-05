@@ -126,7 +126,7 @@ class RewardPointInterface:
 
     def _base_query_RewardPointSummary(self, data_in: dict) -> (int, pd.DataFrame):
         # 基本信息
-        length_base_sql = "select count(bd_psndoc.code) as res from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl {0[0]}"
+        length_base_sql = "select count(rownum) as res from hi_psnjob left join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl {0[0]}"
         today = datetime.datetime.today()  # 今天
         query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                       "bd_psndoc.enablestate =2", "hi_psnjob. poststat='Y'", "bd_psncl.name in ('全职','退休返聘','试用期员工')"]
@@ -217,7 +217,7 @@ class RewardPointInterface:
                 education = school_df.loc[school_df['jobid'] == man, "educationname"].values[0]
                 schoolname = school_df.loc[school_df['jobid'] == man, "schoolname"].values[0]
                 SchoolPoints = school_df.loc[school_df['jobid'] == man, "PointsAmount"].values[0]
-                if pd.isna(SchoolPoints):continue
+                if pd.isna(SchoolPoints): SchoolPoints = 0
                 if education == '本科' and not pd.isna(schoolname):
                     if schoolname in self.HighSchoolList: SchoolPoints += 500
             maninfo_df.loc[man_select, '学历积分'] = SchoolPoints
@@ -230,7 +230,7 @@ class RewardPointInterface:
                 for _tn, _tr, _p in zip(techtittle_df.loc[techtittle_df['jobid'] == man, 'tectittlename'],
                                         techtittle_df.loc[techtittle_df['jobid'] == man, 'tectittlerank'],
                                         techtittle_df.loc[techtittle_df['jobid'] == man, 'PointsAmount']):
-                    if pd.isna(_p): continue
+                    if pd.isna(_p): _p = 0
                     temp_tittlepoint = _p
                     if temp_tittlepoint > TittlePoint:
                         TittlePoint = temp_tittlepoint
@@ -360,7 +360,7 @@ class RewardPointInterface:
                 education = school_df.loc[school_df['jobid'] == man, "educationname"].values[0]
                 schoolname = school_df.loc[school_df['jobid'] == man, "schoolname"].values[0]
                 SchoolPoints = school_df.loc[school_df['jobid'] == man, "PointsAmount"].values[0]
-                if pd.isna(SchoolPoints): continue
+                if pd.isna(SchoolPoints): SchoolPoints = 0
                 if education == '本科' and not pd.isna(schoolname):
                     if schoolname in self.HighSchoolList: SchoolPoints += 500
             res_df.loc[_index, '学历积分'] = SchoolPoints
@@ -372,7 +372,7 @@ class RewardPointInterface:
                 for _tn, _tr, _p in zip(techtittle_df.loc[techtittle_df['jobid'] == man, 'tectittlename'],
                                         techtittle_df.loc[techtittle_df['jobid'] == man, 'tectittlerank'],
                                         techtittle_df.loc[techtittle_df['jobid'] == man, 'PointsAmount']):
-                    if pd.isna(_p): continue
+                    if pd.isna(_p): _p=0
                     temp_tittlepoint = _p
                     if temp_tittlepoint > TittlePoint:
                         TittlePoint = temp_tittlepoint
@@ -429,7 +429,7 @@ class RewardPointInterface:
                 query_item.append(f"goods.Status = {data_in.get('Status')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
-            base_sql = "select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.GoodsID,goods.MeasureUnit,sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkout.ChangeAmount else 0 end) as TotalLock from Goods goods left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID {0[0]} group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.MeasureUnit order by goods.GoodsID asc {0[1]}"
+            base_sql = "select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.GoodsID,goods.MeasureUnit,stkin.TotalIn,stkout.TotalLock,stkout.TotalOut from Goods goods left join (select GoodsID,sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn from StockInDetail stkin group by GoodsID) stkin on stkin.GoodsID = goods.GoodsID left join (select GoodsID,sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkout.ChangeAmount else 0 end) as TotalLock from StockOutDetail stkout group by GoodsID)stkout on stkout.GoodsID = goods.GoodsID  {0[0]}  order by goods.GoodsID asc {0[1]}"
             sql_item = [query_sql]
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
                 sql_item.append('')
@@ -548,7 +548,7 @@ class RewardPointInterface:
             for _tn, _tr, _p in zip(techtittle_df.loc[techtittle_df['jobid'] == man, 'tectittlename'],
                                     techtittle_df.loc[techtittle_df['jobid'] == man, 'tectittlerank'],
                                     techtittle_df.loc[techtittle_df['jobid'] == man, 'PointsAmount']):
-                if pd.isna(_p): continue
+                if pd.isna(_p): _p=0
                 temp_tittlepoint = _p
                 if temp_tittlepoint > Tittle_data['tittleRankPoint']:
                     Tittle_data['tittleRankPoint'] = temp_tittlepoint
@@ -845,10 +845,9 @@ if __name__ == "__main__":
     worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
     data = {'page': 6, "pageSize": 10}
     # data = {'jobid': 100055}
-    # res = worker.query_rewardPoint(data_in=data)
-    # res2 = worker.query_FixedPointDetail(data_in=data)
-    # res3 = worker.query_RewardPointSummary(data_in=data)
-    # res4 = worker._base_query_FixedPoints(data_in=data)
-    res5=worker.query_goods(data_in={"GoodsCode":100005})
-    print(res5)
-
+    res = worker.query_rewardPoint(data_in=data)
+    res2 = worker.query_FixedPointDetail(data_in=data)
+    res3 = worker.query_RewardPointSummary(data_in=data)
+    res4 = worker._base_query_FixedPoints(data_in=data)
+    # res5=worker.query_goods(data_in={"GoodsCode":100005})
+    print(res2,res3,res4)
