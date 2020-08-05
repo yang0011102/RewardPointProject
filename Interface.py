@@ -423,13 +423,13 @@ class RewardPointInterface:
                 query_item.append(f"goods.Name like {goodName}")
             # 商品编码
             if data_in.get("GoodsCode"):
-                query_item.append(f"goods.GoodsCode in {data_in.get('GoodsCode')}")
+                query_item.append(f"goods.GoodsCode in ({data_in.get('GoodsCode')})")
             # 商品状态
             if data_in.get("Status") or data_in.get("Status") == 0:
                 query_item.append(f"goods.Status = {data_in.get('Status')}")
             query_sql = " where " + ' and '.join(query_item)
             # 分页
-            base_sql = '''select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.GoodsID,goods.MeasureUnit,sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkin.ChangeAmount else 0 end) as TotalLock from Goods goods left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID {0[0]} group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.MeasureUnit order by goods.GoodsID asc {0[1]}'''
+            base_sql = "select goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.GoodsID,goods.MeasureUnit,sum(case when stkin.DataStatus=0 and stkin.ChangeType=0 then stkin.ChangeAmount else 0 end) as TotalIn,sum(case when stkout.DataStatus=0 and stkout.ChangeType=0 then stkout.ChangeAmount else 0 end) as TotalOut,sum(case when stkout.DataStatus=0 and stkout.ChangeType=1 then stkout.ChangeAmount else 0 end) as TotalLock from Goods goods left join StockInDetail stkin on stkin.GoodsID = goods.GoodsID left join StockOutDetail stkout on stkout.GoodsID = goods.GoodsID {0[0]} group by goods.GoodsID,goods.GoodsCode,goods.Name,goods.PictureUrl,goods.PointCost,goods.Status,goods.MeasureUnit order by goods.GoodsID asc {0[1]}"
             sql_item = [query_sql]
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
                 sql_item.append('')
@@ -846,7 +846,9 @@ if __name__ == "__main__":
     data = {'page': 6, "pageSize": 10}
     # data = {'jobid': 100055}
     # res = worker.query_rewardPoint(data_in=data)
-    res2 = worker.query_FixedPointDetail(data_in=data)
-    res3 = worker.query_RewardPointSummary(data_in=data)
-    res4 = worker._base_query_FixedPoints(data_in=data)
+    # res2 = worker.query_FixedPointDetail(data_in=data)
+    # res3 = worker.query_RewardPointSummary(data_in=data)
+    # res4 = worker._base_query_FixedPoints(data_in=data)
+    res5=worker.query_goods(data_in={"GoodsCode":100005})
+    print(res5)
 
