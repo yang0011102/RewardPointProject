@@ -1,14 +1,20 @@
 # utf-8
-# from InterfaceModules.shoppingCart import ShoppingCartInterface
-# from InterfaceModules.dd import *
-# from config.dbconfig import *
 
-# ww = DDInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-# dd = {'code': "a4734373ca473f13b8947a4ac380fbf0",
-#       'corpId': "dingcd0f5a2514db343b35c2f4657eb6378f"}
-# c=ww.getUserInfo(dd)
+import pandas as pd
 
-import numpy as np
 
-t=1.13
-print(np.around(t))
+class IterIndexDataFrame(pd.DataFrame):
+    def __iter__(self):
+        for _index in self.index:
+            yield self.loc[_index, :]
+
+
+ttdf = pd.DataFrame([[1, 2, 3],
+                     ['a', 'b', 'c'],
+                     ['4', 'hh', 6]], columns=('c1', 'c2', 'c3'))
+fff = IterIndexDataFrame([[1, 2, 3],
+                          ['a', 'b', 'c'],
+                          ['4', 'hh', 6]], columns=('c1', 'c2', 'c3'))
+
+for _a,_b,_c in fff:
+    print(_a,_b,_c)
