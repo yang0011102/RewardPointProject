@@ -294,6 +294,10 @@ class RewardPointInterface:
         today = datetime.datetime.today()
         query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                       "bd_psndoc.enablestate =2", "hi_psnjob. poststat='Y'", "bd_psncl.name in ('全职','退休返聘','试用期员工')"]
+        if data_in != {}:
+            notemptyflag = True
+        else:
+            notemptyflag = False
         if data_in.get('jobid'):
             query_item.append(f"bd_psndoc.code = '{data_in.get('jobid')}'")
         if data_in.get('name'):
@@ -340,27 +344,33 @@ class RewardPointInterface:
         all_id_tupe = ','.join(tempidlist)
         #  学历
         base_sql = "select ncinfo.jobid,ncinfo.educationname,ncinfo.schoolname,std.PointsAmount from openquery(NC,'select bd_psndoc.code as jobid,c1.name as educationname,edu.school as schoolname from bd_psndoc left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc left join bd_defdoc c1 on edu.education = c1.pk_defdoc where bd_psndoc.enablestate =2 and edu.lasteducation=''Y''') as ncinfo left hash join RewardPointDB.dbo.RewardPointsStandard as std on std.CheckItem=ncinfo.educationname"
-        query_item = ["(std.RewardPointsTypeID=7 or std.RewardPointsTypeID is null)",
-                      f"ncinfo.jobid in ({all_id_tupe})"]
+        query_item = ["(std.RewardPointsTypeID=7 or std.RewardPointsTypeID is null)"]
+        if notemptyflag:
+            query_item.append(f"ncinfo.jobid in ({all_id_tupe})")
         school_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=self.db_mssql)
         #  职称
         base_sql = "select ncinfo.jobid,ncinfo.tectittlename,ncinfo.tectittlerank,std.PointsAmount from openquery(NC,'select bd_psndoc.code as jobid,tectittle.name as tectittlename,tittlerank.name as tectittlerank from bd_psndoc left join hi_psndoc_title on bd_psndoc.pk_psndoc = hi_psndoc_title.pk_psndoc  left join bd_defdoc tectittle on hi_psndoc_title.pk_techposttitle = tectittle.pk_defdoc left join bd_defdoc tittlerank on hi_psndoc_title.titlerank =tittlerank.pk_defdoc where bd_psndoc.enablestate =2') as ncinfo left hash join RewardPointDB.dbo.RewardPointsStandard as std on std.CheckItem=ncinfo.tectittlerank"
-        query_item = ["(std.RewardPointsTypeID=6 or std.RewardPointsTypeID is null)",
-                      f"ncinfo.jobid in ({all_id_tupe})"]
+        query_item = ["(std.RewardPointsTypeID=6 or std.RewardPointsTypeID is null)"]
+        if notemptyflag:
+            query_item.append(f"ncinfo.jobid in ({all_id_tupe})")
         techtittle_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=self.db_mssql)
         #  工龄表
-        ServingAge_base_sql = '''select bd_psndoc.code, min(hi_psndoc_psnchg.begindate) as begindate 
-        from hi_psndoc_psnchg join bd_psndoc on hi_psndoc_psnchg.pk_psndoc=bd_psndoc.pk_psndoc 
-        where (hi_psndoc_psnchg.enddate>'2004-01-01' or hi_psndoc_psnchg.enddate is null) and bd_psndoc.code in ({}) group by bd_psndoc.code '''
-        ServingAge_sql = ServingAge_base_sql.format(all_id_tupe)
+        ServingAge_base_sql = "select bd_psndoc.code, min(hi_psndoc_psnchg.begindate) as begindate from hi_psndoc_psnchg join bd_psndoc on hi_psndoc_psnchg.pk_psndoc=bd_psndoc.pk_psndoc where (hi_psndoc_psnchg.enddate>'2004-01-01' or hi_psndoc_psnchg.enddate is null) {} group by bd_psndoc.code "
+        if notemptyflag:
+            ServingAge_sql = ServingAge_base_sql.format(f"and bd_psndoc.code in ({all_id_tupe})")
+        else:
+            ServingAge_sql = ServingAge_base_sql.format("")
         manServing_df = pd.read_sql(ServingAge_sql, self.db_nc)
         #  职务表
-        jobrank_base_sql = '''select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank  where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'') and bd_psndoc.code in ({}) order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0 '''
+        jobrank_base_sql = "select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code, om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'') {} order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0"
         tempidlist = []
         for _ii in all_id:
             tempidlist.append("\'\'" + _ii + "\'\'")
-        all_id_tupe = ','.join(tempidlist)
-        jobrank_sql = jobrank_base_sql.format(all_id_tupe)
+            all_id_tupe = ','.join(tempidlist)
+        if notemptyflag:
+            jobrank_sql = jobrank_base_sql.format(f"and bd_psndoc.code in ({all_id_tupe})")
+        else:
+            jobrank_sql = jobrank_base_sql.format("")
         jobrank_df = pd.read_sql(jobrank_sql, self.db_mssql)
         for _index in res_df.index:
             man = res_df.loc[_index, '工号']
@@ -862,7 +872,7 @@ if __name__ == "__main__":
     # data = {'jobid': 100055}
     # res = worker.query_rewardPoint(data_in=data)
     # res2 = worker.query_FixedPointDetail(data_in=data)
-    res3 = worker.query_RewardPointSummary(data_in={})
-    # res4 = worker._base_query_FixedPoints(data_in=data)
+    res3 = worker.query_RewardPointSummary(data_in=data)
+    res4 = worker._base_query_FixedPoints(data_in=data)
     # res5=worker.query_goods(data_in={"GoodsCode":100005})
-    print(res3,)
+    print(res4,res3)
