@@ -192,8 +192,8 @@ class RewardPointInterface:
             query_item.append(f"ncinfo.jobid in ({all_id_tupe})")
         techtittle_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=self.db_mssql)
         # A 管理分表
-        mssql_base_sql = '''select dt.*,dt.总可用管理积分-isnull(od.pointuse,0) as 现有管理积分 from (select dt.JobId,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总可用管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>{0[0]} then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>{0[0]} then dt.MinusPoints else 0 end) as 年度管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总获得管理积分 from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 group by dt.JobId) as dt left join (select JobId,sum(case when od.DataStatus=0 and od.OrderStatus in (0,1,2) then od.TotalPrice else 0 end) as pointuse from RewardPointDB.dbo.PointOrder od group by JobId) od on od.JobId=dt.JobId '''
-        sql_item = ["\'"+datetime_string(datetime.datetime(year=today.year - 1, month=12, day=31))+"\'", ]
+        mssql_base_sql = "select dt.*,dt.总可用管理积分-isnull(od.pointuse,0) as 现有管理积分 from (select dt.JobId,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总可用管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>{0[0]} then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>{0[0]} then dt.MinusPoints else 0 end) as 年度管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总获得管理积分 from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 group by dt.JobId) as dt left join (select JobId,sum(case when od.DataStatus=0 and od.OrderStatus in (0,1,2) then od.TotalPrice else 0 end) as pointuse from RewardPointDB.dbo.PointOrder od group by JobId) od on od.JobId=dt.JobId "
+        sql_item = ["\'" + datetime_string(datetime.datetime(year=today.year - 1, month=12, day=31)) + "\'", ]
         if notemptyflag:
             query_item = [f"where dt.JobId in ({all_id_tupe})"]
         else:
@@ -203,9 +203,7 @@ class RewardPointInterface:
         pointdetail = pd.read_sql(mssql_sql, self.db_mssql)
         maninfo_df = pd.merge(maninfo_df, pointdetail, left_on='工号', right_on='JobId', how='left').fillna(0)
         #  工龄表
-        ServingAge_base_sql = '''select bd_psndoc.code,min(hi_psndoc_psnchg.begindate) as begindate 
-        from hi_psndoc_psnchg join bd_psndoc on hi_psndoc_psnchg.pk_psndoc=bd_psndoc.pk_psndoc 
-        where (hi_psndoc_psnchg.enddate>'2004-01-01' or hi_psndoc_psnchg.enddate is null) {} group by bd_psndoc.code '''
+        ServingAge_base_sql = "select bd_psndoc.code,min(hi_psndoc_psnchg.begindate) as begindate from hi_psndoc_psnchg join bd_psndoc on hi_psndoc_psnchg.pk_psndoc=bd_psndoc.pk_psndoc where (hi_psndoc_psnchg.enddate>'2004-01-01' or hi_psndoc_psnchg.enddate is null) {} group by bd_psndoc.code "
         if notemptyflag:
             ServingAge_sql = ServingAge_base_sql.format(f"and bd_psndoc.code in ({all_id_tupe})")
         else:
@@ -875,4 +873,4 @@ if __name__ == "__main__":
     res3 = worker.query_RewardPointSummary(data_in=data)
     res4 = worker._base_query_FixedPoints(data_in=data)
     # res5=worker.query_goods(data_in={"GoodsCode":100005})
-    print(res4,res3)
+    print(res4, res3)
