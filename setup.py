@@ -10,10 +10,12 @@ setup(
         # , "./InterfaceModules/order.py", "./InterfaceModules/shoppingCart.py",
         # "./InterfaceModules/upload.py",
         # "./config/config.py","./config/dbconfig.py",
-        "Interface.py",
-        "baseInterface.py",
+        # "Interface.py",
+        # "baseInterface.py",
         # "dispatcher_switch.py",
         # "verify.py",
+        # "./src/baseInterface_Cython.pyx",
+        "./src/Interface_Cython.pyx"
     ], language_level=3
     ),
 )

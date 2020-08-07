@@ -1,21 +1,23 @@
 # utf-8
 
-import pandas as pd
+from Interface import RewardPointInterface as api1
+from Interface_Cython import RewardPointInterface as api2
+import time
+from config.dbconfig import mssqldb, ncdb
 
+# data = {'jobid': '100236'}
+# data = {'page': 6, "pageSize": 10}
+data = {"PointOrderID": '59'}
+start_time1 = time.time()
+worker1 = api1(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+print("ini cost :", time.time() - start_time1)
+res1 = worker1._base_query_orderDetail(data)
+print("work time : ", time.time() - start_time1)
+print(res1)
 
-class IterIndexDataFrame(pd.DataFrame):
-    def __iter__(self):
-        for _index in self.index:
-            yield self.loc[_index, :]
-
-
-ttdf = pd.DataFrame([[1, 2, 3],
-                     ['a', 'b', 'c'],
-                     ['4', 'hh', 6]], columns=('c1', 'c2', 'c3'))
-fff = IterIndexDataFrame([[1, 2, 3],
-                          ['a', 'b', 'c'],
-                          ['4', 'hh', 6]], columns=('c1', 'c2', 'c3'))
-
-a=['']
-b="aaaaa : {0[0]}"
-print(b.format(a),'\n',b)
+start_time2 = time.time()
+worker2 = api2(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+print("ini cost :", time.time() - start_time2)
+res2 = worker2._base_query_orderDetail(data)
+print("work time : ", time.time() - start_time2)
+print(res2)
