@@ -11,11 +11,13 @@ setup(
         # "./InterfaceModules/upload.py",
         # "./config/config.py","./config/dbconfig.py",
         # "./src/Interface.py",
-        "./src/baseInterface.py",
+        # "./src/baseInterface.py",
         # "./src/dispatcher_switch.py",
         # "./src/verify.py",
-        # "./src/baseInterface_Cython.pyx",
-        # "./src/Interface_Cython.pyx"
+        "./src/baseInterface.pyx",
+        "./src/Interface.pyx",
+        "./src/dispatcher_switch.pyx",
+        "./src/verify.pyx"
     ], language_level=3
     ),
 )

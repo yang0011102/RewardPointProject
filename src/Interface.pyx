@@ -679,18 +679,3 @@ class RewardPointInterface(BaseRewardPointInterface):
 
     def query_FixedPoints_ByYear(self, dict data_in) -> int:
         return self._base_query_FixedPoints_ByYear(data_in=data_in)
-
-
-if __name__ == "__main__":
-    from config.dbconfig import mssqldb, ncdb
-
-    worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-    # data = {'page': 6, "pageSize": 10}
-    data = {'jobid': '100236'}
-    res = worker.query_rewardPoint(data_in=data)
-    print(res)
-    res2 = worker.query_FixedPointDetail(data_in=data)
-    res3 = worker.query_RewardPointSummary(data_in=data)
-    res4 = worker._base_query_FixedPoints(data_in=data)
-    print(res2, '\n', res3, '\n', res4)
-    # res5=worker.query_goods(data_in={"GoodsCode":100005})
