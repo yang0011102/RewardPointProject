@@ -11,6 +11,7 @@ setup(
         # "./InterfaceModules/upload.py",
         # "./config/config.py","./config/dbconfig.py",
         "Interface.py",
+        "baseInterface.py",
         # "dispatcher_switch.py",
         # "verify.py",
     ], language_level=3

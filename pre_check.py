@@ -3,7 +3,7 @@
 用于对输入数据进行预处理
 '''
 # 查询积分明细
-pre_query_rewardPointDetail = {"name": str, "jobid": int, "isBonus": int, "isAccounted": int,
+pre_query_rewardPointDetail = {"name": str, "jobid": str, "isBonus": int, "isAccounted": int,
                                "beginDate": str, "endDate": str,
                                "page": int, "pageSize": int,
                                "rewardPointsType": str, }
@@ -25,7 +25,7 @@ pre_delete_rewardPoint = {"RewardPointsdetailID": int, }
 check_delete_rewardPoint = ["RewardPointsdetailID"]  # 必填
 
 # 导出积分明细
-pre_export_rewardPoint = {"name": str, "jobid": int, "isBonus": int, "isAccounted": int,
+pre_export_rewardPoint = {"name": str, "jobid": str, "isBonus": int, "isAccounted": int,
                           'rewardPointsType': str,
                           "Operator": str}
 check_export_rewardPoint = ["Operator"]  # 必填
@@ -39,12 +39,12 @@ pre_B_RewardPoint = {"jobid": str, }
 check_B_RewardPoint = ["jobid"]  # 必填
 
 # 积分汇总查询
-pre_query_RewardPointSummary = {"name": str, "jobid": int,
+pre_query_RewardPointSummary = {"name": str, "jobid": str,
                                 "page": int, "pageSize": int, }
 check_query_RewardPointSummary = []  # 必填
 
 # 积分汇总导出
-pre_export_RewardPointSummary = {"name": str, "jobid": int,
+pre_export_RewardPointSummary = {"name": str, "jobid": str,
                                  "page": int, "pageSize": int, "Operator": str}
 check_export_RewardPointSummary = ["Operator"]  # 必填
 
@@ -96,13 +96,13 @@ check_query_orderDetail = ["PointOrderID"]  # 必填
 
 
 # 查询固定积分
-pre_query_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int}
+pre_query_FixedPoints= {"jobid": str,'name':str,'pageSize':int,"page":int}
 check_query_FixedPoints = []  # 必填
 
 # 导出固定积分
-pre_export_FixedPoints= {"jobid": int,'name':str,'pageSize':int,"page":int,"Operator":str}
+pre_export_FixedPoints= {"jobid": str,'name':str,'pageSize':int,"page":int,"Operator":str}
 check_export_FixedPoints = ["Operator"]  # 必填
 
 # 按年查询管理积分总和
-pre_query_FixedPoints_ByYear= {"jobid": int,'year':int}
+pre_query_FixedPoints_ByYear= {"jobid": str,'year':int}
 check_query_FixedPoints_ByYear = ["jobid",'year']  # 必填
