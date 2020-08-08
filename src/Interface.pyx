@@ -3,7 +3,7 @@
 接口主体
 '''
 
-from baseInterface_Cython import BaseRewardPointInterface
+from baseInterface import BaseRewardPointInterface
 from tool.tool import *
 
 
@@ -11,7 +11,7 @@ class RewardPointInterface(BaseRewardPointInterface):
     def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体
         super(RewardPointInterface, self).__init__(mssqlDbInfo, ncDbInfo)
-        self.rewardPointChildType = getChlidType(dbcon=self.db_mssql)
+        self.rewardPointChildType = getChlidType(self.db_mssql)
         self.rewardPointStandard = pd.read_sql(
             sql='''SELECT [RewardPointsStandardID],[RewardPointsTypeID],[CheckItem],[PointsAmount],[ChangeCycle] FROM [RewardPointDB].[dbo].[RewardPointsStandard]''',
             con=self.db_mssql)  # 积分标准表

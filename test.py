@@ -2,6 +2,8 @@
 
 from config.dbconfig import mssqldb as mssqlDbInfo
 from datetime import datetime
-from tool import sub_datetime_Bydayone
+from tool.tool import *
+import pymssql
+db_mssql = pymssql.connect(**mssqlDbInfo)
 
-print(sub_datetime_Bydayone(datetime(year=2015,month=1,day=3),datetime(year=2019,month=3,day=7)))
+getChlidType(db_mssql)
