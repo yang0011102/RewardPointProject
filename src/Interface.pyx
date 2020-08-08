@@ -95,7 +95,7 @@ class RewardPointInterface(BaseRewardPointInterface):
                        "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
                        "{0[1]} order by dt.RewardPointsdetailID desc {0[2]}"
             # 分页
-            sql_item = sql_item.append(query_sql)
+            sql_item.append(query_sql)
             if not (data_in.get("page") and data_in.get("pageSize")):  # 不分页
                 sql_item.append('')
             else:
@@ -454,6 +454,8 @@ class RewardPointInterface(BaseRewardPointInterface):
                                                                            serving_count_time=self.serving_count_time)
         serving_data['begindate'] = manServing_df.loc[0, 'BEGINDATE']
         serving_data['servingAgePoints'] = ServingAgePoints
+        serving_data['servingAge_years'] = years
+        serving_data['servingAge_months'] = months
         # 职务积分
         _, jobrank_data = super()._count_jobrankpoint(jobrank_df=jobrank_df, man=data_in.get('jobid'),
                                                       jobrank_count_time=self.jobrank_count_time,

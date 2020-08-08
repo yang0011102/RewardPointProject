@@ -113,7 +113,7 @@ class BaseRewardPointInterface:
                 serving_begindate = datetime.datetime(year=serving_begindate.year + 1, month=1, day=1)  # 从下年元旦开始计算
         years, months = countTime_NewYear(beginDate=serving_begindate,
                                           endDate=datetime.datetime(year=thisyear, month=12, day=30))
-        ServingAgePoints = int((years + months / 12) * 2000)
+        ServingAgePoints = np.around((years + months / 12) * 2000)
         return ServingAgePoints, serving_begindate, years, months
 
     def _count_jobrankpoint(self, jobrank_df: pd.DataFrame, str man, int thisyear,
