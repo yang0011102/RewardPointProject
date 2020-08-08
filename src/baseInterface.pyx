@@ -4,7 +4,7 @@ from tool.tool import *
 
 
 class BaseRewardPointInterface:
-    def __init__(self, mssqlDbInfo: dict, ncDbInfo: dict):
+    def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体
         self.db_mssql = pymssql.connect(**mssqlDbInfo)
         self.db_nc = cx_Oracle.connect(

@@ -19,7 +19,7 @@ activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
-def dispatcher(selector, data, files=None):
+def dispatcher(str selector,dict data, files=None):
     '''
     根据selector调度接口
     :param selector:
@@ -465,8 +465,7 @@ def dispatcher(selector, data, files=None):
                      "msg": "无效的接口"
                      }
     return _response
-
-def pre_check(checker: dict, file, data: dict, mustFile=None):
+def pre_check(dict checker, file, dict data, mustFile=None):
     '''
         用于进行数据校验
     :param checker: 用于检查data内字段

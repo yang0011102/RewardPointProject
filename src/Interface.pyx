@@ -8,7 +8,7 @@ from tool.tool import *
 
 
 class RewardPointInterface(BaseRewardPointInterface):
-    def __init__(self, mssqlDbInfo: dict, ncDbInfo: dict):
+    def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体
         super(RewardPointInterface, self).__init__(mssqlDbInfo, ncDbInfo)
         self.rewardPointChildType = getChlidType(dbcon=self.db_mssql)
