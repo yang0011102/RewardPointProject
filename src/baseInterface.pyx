@@ -16,7 +16,8 @@ class BaseRewardPointInterface:
         cdef list query_item = ["(std.RewardPointsTypeID=7 or std.RewardPointsTypeID is null)"]
         if notemptyflag:
             query_item.append(f"ncinfo.jobid in ({id})")
-        school_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=con)
+        school_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=con).fillna(
+            {"schoolname": '', "PointsAmount": 0})
         return school_df
 
     def _get_techtittle(self, con: pymssql.Connection, str id, bint notemptyflag) -> pd.DataFrame:
@@ -24,7 +25,8 @@ class BaseRewardPointInterface:
         cdef list query_item = ["(std.RewardPointsTypeID=6 or std.RewardPointsTypeID is null)"]
         if notemptyflag:
             query_item.append(f"ncinfo.jobid in ({id})")
-        techtittle_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=con)
+        techtittle_df = pd.read_sql(sql=base_sql + " where " + ' and '.join(query_item), con=con).fillna(
+            {"tectittlename": '', "tectittlerank": '', 'PointsAmount': 0})
         return techtittle_df
 
     def _get_A_managePoint(self, con: pymssql.Connection, str id, bint notemptyflag, int thisyear) -> pd.DataFrame:
@@ -36,7 +38,8 @@ class BaseRewardPointInterface:
             query_item = ['']
         sql_item.append(' and '.join(query_item))
         mssql_sql = mssql_base_sql.format(sql_item)
-        pointdetail = pd.read_sql(mssql_sql, con)
+        pointdetail = pd.read_sql(mssql_sql, con).fillna(
+            {"现有管理积分": 0, "现有A分": 0, "总可用管理积分": 0, "年度管理积分": 0, "总获得A分": 0, "总获得管理积分": 0, "pointuse": 0})
         return pointdetail
 
     def _get_ServingAge(self, con: cx_Oracle.Connection, str id, bint notemptyflag) -> pd.DataFrame:
@@ -60,7 +63,7 @@ class BaseRewardPointInterface:
             jobrank_sql = jobrank_base_sql.format(f"and bd_psndoc.code in ({all_id_tupe})")
         else:
             jobrank_sql = jobrank_base_sql.format("")
-        jobrank_df = pd.read_sql(jobrank_sql, con)
+        jobrank_df = pd.read_sql(jobrank_sql, con).fillna({"PointsAmount":0,"JOBNAME":"","职等":""})
         return jobrank_df
 
     def _get_manlength(self, con: cx_Oracle.Connection, list sql_item):
