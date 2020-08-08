@@ -1,15 +1,23 @@
 # utf-8
 import pymssql, cx_Oracle, pandas as pd, datetime
 from tool.tool import *
+from DBUtils.PooledDB import PooledDB
 
 
 class BaseRewardPointInterface:
     def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体
-        self.db_mssql = pymssql.connect(**mssqlDbInfo)
-        self.db_nc = cx_Oracle.connect(
-            f'{ncDbInfo["user"]}/{ncDbInfo["password"]}@{ncDbInfo["host"]}:{ncDbInfo["port"]}/{ncDbInfo["db"]}',
-            encoding="UTF-8", nencoding="UTF-8")
+        self.mssql_pool = PooledDB(creator=pymssql, mincached=4, maxcached=8, maxshared=4, maxconnections=10,
+                                   blocking=True, **mssqlDbInfo)
+        self.nc_pool = PooledDB(creator=cx_Oracle, mincached=4, maxcached=8, maxshared=4, maxconnections=10,
+                                blocking=True,
+                                user=ncDbInfo.get('user'), password=ncDbInfo.get('password'),
+                                dsn=f"{ncDbInfo['host']}:{ncDbInfo['port']}/{ncDbInfo['db']}",
+                                encoding="UTF-8", nencoding="UTF-8")
+        # self.db_mssql = pymssql.connect(**mssqlDbInfo)
+        # self.db_nc = cx_Oracle.connect(
+        #     f'{ncDbInfo["user"]}/{ncDbInfo["password"]}@{ncDbInfo["host"]}:{ncDbInfo["port"]}/{ncDbInfo["db"]}',
+        #     encoding="UTF-8", nencoding="UTF-8")
 
     def _get_education(self, con: pymssql.Connection, str id, bint notemptyflag) -> pd.DataFrame:
         cdef str base_sql = "select ncinfo.jobid,ncinfo.educationname,ncinfo.schoolname,std.PointsAmount from openquery(NC,'select bd_psndoc.code as jobid,c1.name as educationname,edu.school as schoolname from bd_psndoc left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc left join bd_defdoc c1 on edu.education = c1.pk_defdoc where bd_psndoc.enablestate =2 and edu.lasteducation=''Y''') as ncinfo left hash join RewardPointDB.dbo.RewardPointsStandard as std on std.CheckItem=ncinfo.educationname"
@@ -63,7 +71,7 @@ class BaseRewardPointInterface:
             jobrank_sql = jobrank_base_sql.format(f"and bd_psndoc.code in ({all_id_tupe})")
         else:
             jobrank_sql = jobrank_base_sql.format("")
-        jobrank_df = pd.read_sql(jobrank_sql, con).fillna({"PointsAmount":0,"JOBNAME":"","职等":""})
+        jobrank_df = pd.read_sql(jobrank_sql, con).fillna({"PointsAmount": 0, "JOBNAME": "", "职等": ""})
         return jobrank_df
 
     def _get_manlength(self, con: cx_Oracle.Connection, list sql_item):
