@@ -123,7 +123,7 @@ cpdef int sub_datetime_Bydayone(beginDate: datetime.datetime, endDate: datetime.
     #     year = endDate.year - beginDate.year
     # return year, months
 
-cpdef bint isVaildDate(date, str timeType="%Y-%m-%d %H:%M:%S"):
+cpdef bint isVaildDate(str date, str timeType="%Y-%m-%d %H:%M:%S"):
     '''
     判断字符串是否为某种时间格式
     :param date:

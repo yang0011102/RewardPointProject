@@ -15,10 +15,10 @@ setup(
         # "./src/baseInterface.py",
         # "./src/dispatcher_switch.py",
         # "./src/verify.py",
-        # "./src/baseInterface.pyx",
-        # "./src/Interface.pyx",
-        # "./src/dispatcher_switch.pyx",
-        # "./src/verify.pyx",
+        "./src/baseInterface.pyx",
+        "./src/Interface.pyx",
+        "./src/dispatcher_switch.pyx",
+        "./src/verify.pyx",
     ], language_level=3
     ),
 )
