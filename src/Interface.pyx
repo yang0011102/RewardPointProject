@@ -483,8 +483,9 @@ class RewardPointInterface(BaseRewardPointInterface):
         return self._base_query_RewardPointSummary(data_in)
 
     def export_RewardPointSummary(self, dict data_in) -> str:
+        Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
+        return get_dfUrl(df=res_df, Operator=Operator)
 
     def query_FixedPointDetail(self, dict data_in) -> dict:
         return self._base_query_FixedPointDetail(data_in=data_in)
@@ -512,8 +513,9 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
+        Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
+        return get_dfUrl(df=res_df, Operator=Operator)
 
     def import_rewardPoint_onesql(self, dict data_in, file_df: pd.DataFrame) -> bool:
         mssql_con=self.mssql_pool.connection()
@@ -628,8 +630,9 @@ class RewardPointInterface(BaseRewardPointInterface):
         return self._base_query_goods(data_in=data_in)
 
     def export_goods(self, dict data_in) -> str:
+        Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_goods(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
+        return get_dfUrl(df=res_df, Operator=Operator)
 
     def import_goods(self, dict data_in, file_df: pd.DataFrame) -> bool:
         mssql_con=self.mssql_pool.connection()
@@ -693,8 +696,9 @@ class RewardPointInterface(BaseRewardPointInterface):
         return self._base_query_FixedPoints(data_in)
 
     def export_FixedPoints(self, dict data_in) -> str:
+        Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_FixedPoints(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=data_in.get("Operator"))
+        return get_dfUrl(df=res_df, Operator=Operator)
 
     def query_FixedPoints_ByYear(self, dict data_in) -> int:
         return self._base_query_FixedPoints_ByYear(data_in=data_in)

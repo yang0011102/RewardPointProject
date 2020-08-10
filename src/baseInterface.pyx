@@ -60,7 +60,7 @@ class BaseRewardPointInterface:
         return manServing_df
 
     def _get_jobrank(self, con: pymssql.Connection, list all_id, bint notemptyflag) -> pd.DataFrame:
-        cdef str jobrank_base_sql = "select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,om_job.jobname,om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank join om_job on om_job.pk_job=hi_psnjob.pk_job where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.endflag=''N'') {} order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0"
+        cdef str jobrank_base_sql = "select ncinfo.*,std.PointsAmount from openquery(NC,'select hi_psnjob.begindate,hi_psnjob.enddate,bd_psndoc.code,om_job.jobname,om_jobrank.jobrankname as 职等 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc join om_jobrank on om_jobrank.pk_jobrank = hi_psnjob.pk_jobrank join om_job on om_job.pk_job=hi_psnjob.pk_job where hi_psnjob.ismainjob =''Y'' and bd_psndoc.enablestate =2 and (hi_psnjob.enddate>''2018-01-01'' or hi_psnjob.enddate is null) {} order by bd_psndoc.code,hi_psnjob.begindate') as ncinfo inner hash join RewardPointDB.dbo.RewardPointsStandard  as std on ncinfo.职等=std.CheckItem where std.DataStatus=0"
         cdef list tempidlist = []
         cdef str all_id_tupe = ""
         cdef str jobrank_sql
