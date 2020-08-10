@@ -126,9 +126,10 @@ class RewardPointInterface(BaseRewardPointInterface):
         mssql_con=self.mssql_pool.connection()
         nc_con=self.nc_pool.connection()
         today = datetime.datetime.today()  # 今天
-        cdef list query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
-                                "bd_psndoc.enablestate =2", "hi_psnjob. poststat='Y'",
-                                "bd_psncl.name in ('全职','退休返聘','试用期员工')"]
+        cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+                                "bd_psndoc.enablestate =2",
+                                "bd_psncl.name not in ('独立业务员')",
+                                "regexp_like(org_adminorg.name,'(威腾电气|威通|西屋)')"]
         cdef bint notemptyflag, is985211
         cdef str maninfo_base_sql, all_id_tupe, education, schoolname, tittle_rank, tittle_name
         cdef list sql_item, all_id, tempidlist, jobrank_data
@@ -227,9 +228,10 @@ class RewardPointInterface(BaseRewardPointInterface):
         today = datetime.datetime.today()
         mssql_con=self.mssql_pool.connection()
         nc_con=self.nc_pool.connection()
-        cdef list query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
-                                "bd_psndoc.enablestate =2", "hi_psnjob. poststat='Y'",
-                                "bd_psncl.name in ('全职','退休返聘','试用期员工')"]
+        cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+                                "bd_psndoc.enablestate =2",
+                                "bd_psncl.name not in ('独立业务员')",
+                                "regexp_like(org_adminorg.name,'(威腾电气|威通|西屋)')"]
         cdef bint notemptyflag
         cdef str maninfo_base_sql, maninfo_sql, all_id_tupe, man, education, schoolname, tittle_name
         cdef list sql_item, tempidlist, all_id

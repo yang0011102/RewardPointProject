@@ -75,7 +75,7 @@ class BaseRewardPointInterface:
         return jobrank_df
 
     def _get_manlength(self, con: cx_Oracle.Connection, list sql_item):
-        cdef str length_base_sql = "select count(rownum) as res from hi_psnjob left join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl {0[0]}"
+        cdef str length_base_sql = "select count(rownum) as res from hi_psnjob left join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc left join org_adminorg on org_adminorg.pk_adminorg  =hi_psnjob.pk_org left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl {0[0]}"
         cdef float totalLength = pd.read_sql(sql=length_base_sql.format(sql_item), con=con).loc[0, 'RES']
         return totalLength
 

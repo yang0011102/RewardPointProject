@@ -6,7 +6,7 @@ from Cython.Build import cythonize
 setup(
     name='Anything you want',
     ext_modules=cythonize([
-        "./src/tool.pyx",
+        # "./src/tool.pyx",
         # "./InterfaceModules/activity.py", "./InterfaceModules/dd.py"
         # , "./InterfaceModules/order.py", "./InterfaceModules/shoppingCart.py",
         # "./InterfaceModules/upload.py",
