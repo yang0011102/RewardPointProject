@@ -168,7 +168,7 @@ cpdef dict getChlidType(dbcon: pymssql.Connection):
     return res
 
 cpdef str get_dfUrl(df: pd.DataFrame, str Operator):
-    cdef str filename = Operator + str(time.time()) + ".xlsx"
+    cdef str filename = f"{Operator}{str(time.time())}.xlsx"
     cdef str filepath = DOWNLOAD_FOLDER + '/' + filename
     df.to_excel(filepath, index=False, encoding='utf-8')
     return "/download/" + filename  # 传回相对路径
