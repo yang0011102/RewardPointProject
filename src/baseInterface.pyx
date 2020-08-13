@@ -20,7 +20,7 @@ class BaseRewardPointInterface:
         #     encoding="UTF-8", nencoding="UTF-8")
 
     def _get_education(self, con: pymssql.Connection, str id, bint notemptyflag) -> pd.DataFrame:
-        cdef str base_sql = "select ncinfo.jobid,ncinfo.educationname,ncinfo.schoolname,std.PointsAmount from openquery(NC,'select bd_psndoc.code as jobid,c1.name as educationname,edu.school as schoolname from bd_psndoc left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc left join bd_defdoc c1 on edu.education = c1.pk_defdoc where bd_psndoc.enablestate =2 and edu.lasteducation=''Y''') as ncinfo left hash join RewardPointDB.dbo.RewardPointsStandard as std on std.CheckItem=ncinfo.educationname"
+        cdef str base_sql = "select ncinfo.jobid,ncinfo.educationname,ncinfo.schoolname,std.PointsAmount from openquery(NC,'select bd_psndoc.code as jobid,c1.name as educationname,edu.school as schoolname from bd_psndoc left join hi_psndoc_edu edu on bd_psndoc.pk_psndoc = edu.pk_psndoc left join bd_defdoc c1 on edu.education = c1.pk_defdoc where bd_psndoc.enablestate =2') as ncinfo left hash join RewardPointDB.dbo.RewardPointsStandard as std on std.CheckItem=ncinfo.educationname"
         cdef list query_item = ["(std.RewardPointsTypeID=7 or std.RewardPointsTypeID is null)"]
         if notemptyflag:
             query_item.append(f"ncinfo.jobid in ({id})")
@@ -85,14 +85,19 @@ class BaseRewardPointInterface:
         cdef str education = ''
         cdef bint is985211 = 0
         if len(school_df.loc[school_df['jobid'] == man, :]) > 0:
-            education = school_df.loc[school_df['jobid'] == man, "educationname"].values[0]
-            schoolname = school_df.loc[school_df['jobid'] == man, "schoolname"].values[0]
-            SchoolPoints = school_df.loc[school_df['jobid'] == man, "PointsAmount"].values[0]
-            if pd.isna(SchoolPoints): SchoolPoints = 0
-            if education == '本科' and not pd.isna(schoolname):
-                if schoolname in HighSchoolList:
-                    SchoolPoints += 500
-                    is985211 = 1
+            for _edu, _name, _p in zip(school_df.loc[school_df['jobid'] == man, "educationname"],
+                                       school_df.loc[school_df['jobid'] == man, "schoolname"],
+                                       school_df.loc[school_df['jobid'] == man, "PointsAmount"]):
+
+                if pd.isna(_p): _p = 0
+                if _edu == '本科' and not pd.isna(_name):
+                    if _name in HighSchoolList:
+                        _p += 500
+                        is985211 = 1
+                if _p > SchoolPoints:
+                    SchoolPoints = _p
+                    schoolname = _name
+                    education = _edu
         return SchoolPoints, education, schoolname, is985211
 
     def _count_tittlePoint(self, techtittle_df: pd.DataFrame, str man):
