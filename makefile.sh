@@ -6,3 +6,4 @@ find ./src -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
 find ./InterfaceModules -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
 find ./config -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
 rm -rf /home/yy/Project/RewardPoint/build;
+mv -i tool.cpython-37m-x86_64-linux-gnu.so ./tool/tool.cpython-37m-x86_64-linux-gnu.so;
