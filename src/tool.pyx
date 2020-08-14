@@ -76,14 +76,15 @@ cpdef (int, int) countTime_NewYear(beginDate: datetime.datetime, endDate: dateti
     '''
     cdef int years, month
     if beginDate.year != endDate.year:
-        if beginDate.month == beginDate.month == 1:
+        if beginDate.month == beginDate.day == 1:
             years = endDate.year - beginDate.year + 1
+            month = 0
         else:
             years = endDate.year - beginDate.year
-        if beginDate.day != 1:
-            month = 12 - beginDate.month
-        else:
-            month = 12 - beginDate.month + 1
+            if beginDate.day == 1:
+                month = 12 - beginDate.month + 1
+            else:
+                month = 12 - beginDate.month
     else:
         years = 0
         if beginDate.day != 1:
