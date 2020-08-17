@@ -50,7 +50,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         cdef str totalLength_sql, beginDate, endDate, rewardPointsType, manName, query_sql, base_sql
         cdef list sql_item, query_item, _rewardPointsType_container
         cdef float totalLength
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         if data_in:  # 不为空则按照条件查询
             totalLength_sql = "select COUNT([RewardPointsdetailID]) as res from [RewardPointDB].[dbo].[RewardPointsDetail] as dt join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId"
             query_item = ["dt.DataStatus=0", "a.DataStatus=0"]  # 查询条件
@@ -123,8 +123,8 @@ class RewardPointInterface(BaseRewardPointInterface):
 
     def _base_query_RewardPointSummary(self, dict data_in) -> (int, pd.DataFrame):
         # 基本信息
-        mssql_con=self.mssql_pool.connection()
-        nc_con=self.nc_pool.connection()
+        mssql_con = self.mssql_pool.connection()
+        nc_con = self.nc_pool.connection()
         today = datetime.datetime.today()  # 今天
         cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                                 "bd_psndoc.enablestate =2",
@@ -226,8 +226,8 @@ class RewardPointInterface(BaseRewardPointInterface):
 
     def _base_query_FixedPoints(self, dict data_in) -> (int, pd.DataFrame):
         today = datetime.datetime.today()
-        mssql_con=self.mssql_pool.connection()
-        nc_con=self.nc_pool.connection()
+        mssql_con = self.mssql_pool.connection()
+        nc_con = self.nc_pool.connection()
         cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                                 "bd_psndoc.enablestate =2",
                                 "bd_psncl.name not in ('独立业务员')",
@@ -270,7 +270,9 @@ class RewardPointInterface(BaseRewardPointInterface):
             left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl  {0[0]} '''
             sql_item = [" where " + ' and '.join(query_item)]
         maninfo_sql = maninfo_base_sql.format(sql_item)
+        print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=nc_con)
+        print(maninfo_df)
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
         res_df = pd.DataFrame(
@@ -295,7 +297,7 @@ class RewardPointInterface(BaseRewardPointInterface):
             man = res_df.loc[_index, '工号']
             man_select = maninfo_df['工号'] == man
             for _item in ['姓名', '部门', '职务', '组织']:
-                if len(maninfo_df.loc[man_select, _item]) == 1:
+                if len(maninfo_df.loc[man_select, _item]) > 0:
                     res_df.loc[_index, _item] = maninfo_df.loc[man_select, _item].values[0]
             #  学历积分
             SchoolPoints, education, schoolname, _ = super()._count_educationPoint(school_df=school_df, man=man,
@@ -324,7 +326,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         cdef list query_item, sql_item
         cdef str goodName, query_sql, base_sql, totalLength_sql
         cdef float totalLength
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         if data_in:  # 不为空则按照条件查询
             query_item = ["goods.DataStatus=0"]  # 查询条件
             # 商品名称
@@ -364,7 +366,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         cdef list query_item, sql_item
         cdef str query_sql, base_sql, totalLength_sql
         cdef float totalLength
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         query_item = ["PointOrder.DataStatus=0"]
         if data_in.get("Operator"):
             query_item.append(f"PointOrder.JobId={data_in.get('Operator')}")
@@ -400,7 +402,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         cdef list query_item, sql_item
         cdef str query_sql, base_sql, totalLength_sql, orderID
         cdef float totalLength
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         query_item = ['ordergoods.DataStatus=0']
         orderID = data_in.get('PointOrderID')
         query_item.append(f"orders.PointOrderID in ({orderID})")
@@ -419,8 +421,8 @@ class RewardPointInterface(BaseRewardPointInterface):
         return res_df.loc[0, 'AnnualSum']
 
     def _base_query_FixedPointDetail(self, dict data_in) -> dict:
-        mssql_con=self.mssql_pool.connection()
-        nc_con=self.nc_pool.connection()
+        mssql_con = self.mssql_pool.connection()
+        nc_con = self.nc_pool.connection()
         today = datetime.datetime.today()  # 今天
         cdef str man, maninfo_base_sql, education, schoolname, tittle_rank, tittle_name
         cdef list query_item, jobrank_data
@@ -501,7 +503,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         return self._base_query_rewardPointDetail(data_in=data_in)
 
     def delete_rewardPoint(self, dict data_in) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         cdef str base_sql = "update [RewardPointDB].[dbo].[RewardPointsDetail] set DataStatus=1 where RewardPointsdetailID = {}"
         cdef str sql = base_sql.format(data_in.get("RewardPointsdetailID"))
         cur = mssql_con.cursor()
@@ -520,7 +522,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         return get_dfUrl(df=res_df, Operator=Operator)
 
     def import_rewardPoint_onesql(self, dict data_in, file_df: pd.DataFrame) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         rewardPointType_df = pd.read_sql(
             "select RewardPointsTypeID,Name from RewardPointDB.dbo.RewardPointsType where DataStatus=0",
             con=mssql_con)
@@ -564,7 +566,7 @@ class RewardPointInterface(BaseRewardPointInterface):
 
     @verison_warning
     def import_rewardPoint(self, dict data_in, file_df: pd.DataFrame) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         cdef list sql_item, sql_values
         cdef str sql
         rewardPointType_df = pd.read_sql(
@@ -611,7 +613,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         return True
 
     def account_rewardPoint(self, dict data_in) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         cdef str base_sql = "update [RewardPointDB].[dbo].[RewardPointsDetail] set IsAccounted=1 where {} in "
         cur = mssql_con.cursor()
         cdef bint err_flag = 0
@@ -637,7 +639,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         return get_dfUrl(df=res_df, Operator=Operator)
 
     def import_goods(self, dict data_in, file_df: pd.DataFrame) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         cur = mssql_con.cursor()
         # 先检查GoodsCode存不存在,不存在就新建一个
         all_goodsCode = pd.read_sql(sql="select GoodsCode from Goods where DataStatus=0", con=mssql_con)[
@@ -671,7 +673,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         return True
 
     def set_goods_status(self, dict data_in) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         cdef str sql = f"update [RewardPointDB].[dbo].[Goods] set Status={data_in.get('Status')} where GoodsCode in ({data_in.get('GoodsCode')})"
         cur = mssql_con.cursor()
         cur.execute(sql)
@@ -679,7 +681,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         return True
 
     def upload_goodsImage(self, dict data_in, str image_url) -> bool:
-        mssql_con=self.mssql_pool.connection()
+        mssql_con = self.mssql_pool.connection()
         cur = mssql_con.cursor()
         cdef str base_sql = "update RewardPointDB.dbo.Goods set PictureUrl={}"
         cdef list query_item = []

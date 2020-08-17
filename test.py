@@ -7,8 +7,8 @@ from config.dbconfig import *
 
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
-# data={"jobid":"100283"}
-data={'pageSize':10,'page':1}
+data={"jobid":"110424"}
+# data={'pageSize':10,'page':1}
 # res=worker.query_FixedPointDetail(data_in=data)
 res=worker.query_FixedPoints(data_in=data)
 print(res)
