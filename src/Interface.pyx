@@ -270,9 +270,7 @@ class RewardPointInterface(BaseRewardPointInterface):
             left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl  {0[0]} '''
             sql_item = [" where " + ' and '.join(query_item)]
         maninfo_sql = maninfo_base_sql.format(sql_item)
-        print(maninfo_sql)
         maninfo_df = pd.read_sql(sql=maninfo_sql, con=nc_con)
-        print(maninfo_df)
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
         res_df = pd.DataFrame(
