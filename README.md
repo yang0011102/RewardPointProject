@@ -13,9 +13,9 @@
     + shoppingCart.py
     + upload.py
 + **src**
-		 src文件夹下多是一些代码的源码文件
+		 *src文件夹下多是一些代码的源码文件
 		 其中.pyx基于Cython
-		 .py是纯Python文件,已经停止使用了
+		 .py是纯Python文件,已经停止使用了*
 	+ verify.pyx
 	> verify提供了token生成器和验证方法
     + tool.pyx
