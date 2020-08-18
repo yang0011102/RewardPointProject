@@ -4,7 +4,7 @@
 '''
 
 from baseInterface import BaseRewardPointInterface
-from tool.tool import *
+from tool import *
 from pandas import DataFrame,read_sql,Timestamp,isna,to_datetime,merge
 
 

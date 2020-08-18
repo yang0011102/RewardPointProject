@@ -11,7 +11,7 @@ from InterfaceModules.shoppingCart import ShoppingCartInterface
 from InterfaceModules.order import OrderInterface
 from config.dbconfig import *
 from pre_check import *
-from tool.tool import *
+from tool import *
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
