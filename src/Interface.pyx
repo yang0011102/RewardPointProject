@@ -5,7 +5,7 @@
 
 from baseInterface import BaseRewardPointInterface
 from tool import *
-from pandas import DataFrame,read_sql,Timestamp,isna,to_datetime,merge
+from pandas import DataFrame, read_sql, Timestamp, isna, to_datetime, merge
 
 
 class RewardPointInterface(BaseRewardPointInterface):
@@ -154,7 +154,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         else:
             notemptyflag = 0
         # 是否取离职人员
-        if data_in.get('onduty')==0: # 0取在职的
+        if data_in.get('onduty') == 0:  # 0取在职的
             query_item.append("hi_psnjob.endflag ='N' and hi_psnjob. poststat='Y'")
         if data_in.get('name'):  # 姓名
             query_item.append(f"bd_psndoc.name='{data_in.get('name')}'")
@@ -263,7 +263,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         else:
             notemptyflag = 0
         # 是否取离职人员
-        if data_in.get('onduty')==0: # 0取在职的
+        if data_in.get('onduty') == 0:  # 0取在职的
             query_item.append("hi_psnjob.endflag ='N' and hi_psnjob. poststat='Y'")
 
         if data_in.get('jobid'):

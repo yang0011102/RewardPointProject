@@ -1,4 +1,5 @@
 # utf-8
-from tool import *
-r=isEmpty("33")
-print(r)
+import pymssql
+# import cx_Oracle
+import datetime
+print(datetime)

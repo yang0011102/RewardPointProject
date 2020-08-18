@@ -4,6 +4,7 @@ from tool import *
 from DBUtils.PooledDB import PooledDB
 from pandas import DataFrame, read_sql, isna
 
+
 class BaseRewardPointInterface:
     def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体

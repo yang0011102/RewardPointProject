@@ -19,7 +19,7 @@ activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
-def dispatcher(str selector,dict data, files=None):
+def dispatcher(str selector, dict data, files=None):
     '''
     根据selector调度接口
     :param selector:
