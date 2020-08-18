@@ -4,10 +4,10 @@ import functools
 import json
 import time
 import pymssql
-import numpy as np
-import pandas as pd
+from numpy import isnan,integer,floating,ndarray
+from pandas import DataFrame, read_sql, isna, Timestamp, to_datetime
 from warnings import warn
-from config.config import DOWNLOAD_FOLDER
+from config import *
 import simplejson
 
 def verison_warning(func):
@@ -20,7 +20,7 @@ def verison_warning(func):
 
     return __warning
 
-cpdef list df_tolist(df: pd.DataFrame):
+cpdef list df_tolist(df: DataFrame):
     cdef list res_list = []
     for _index in df.index.tolist():
         res_list.append(df.loc[_index, :].to_dict())
@@ -143,7 +143,7 @@ cpdef dict getChlidType(dbcon: pymssql.Connection):
     :param dbcon: MSSQL连接器
     :return:
     '''
-    rewardPointsType_df = pd.read_sql(
+    rewardPointsType_df = read_sql(
         'select RewardPointsTypeID,ParentID,ChildrenID,RewardPointsTypeCode,Name from RewardPointsType where DataStatus=0',
         dbcon)
     cdef list childID, childID_list, childName
@@ -168,7 +168,7 @@ cpdef dict getChlidType(dbcon: pymssql.Connection):
         res[_name] = _rewardPointsType_container
     return res
 
-cpdef str get_dfUrl(df: pd.DataFrame, str Operator):
+cpdef str get_dfUrl(df: DataFrame, str Operator):
     cdef str filename = f"{Operator}{str(time.time())}.xlsx"
     cdef str filepath = DOWNLOAD_FOLDER + '/' + filename
     df.to_excel(filepath, index=False, encoding='utf-8')
@@ -192,25 +192,25 @@ def isEmpty(obj):
         return obj == []
     elif isinstance(obj, tuple):
         return obj == ()
-    elif isinstance(obj, pd.DataFrame):
+    elif isinstance(obj, DataFrame):
         return len(obj.index) == 0
     else:
-        return pd.isna(obj)
+        return isna(obj)
 
 
 @verison_warning
 class MyEncoder(json.JSONEncoder):
     def default(self, obj: object):
-        if isinstance(obj, float) and np.isnan(obj):
+        if isinstance(obj, float) and isnan(obj):
             return 0
-        elif isinstance(obj, np.integer):
+        elif isinstance(obj, integer):
             return int(obj)
-        elif isinstance(obj, np.floating):
+        elif isinstance(obj, floating):
             return float(obj)
-        elif isinstance(obj, np.ndarray):
+        elif isinstance(obj, ndarray):
             return obj.tolist()
-        elif isinstance(obj, pd.Timestamp):
-            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
+        elif isinstance(obj, Timestamp):
+            return datetime_string(to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
         elif isinstance(obj, bytes):
             return str(obj, 'utf-8')
         else:
@@ -219,14 +219,14 @@ class MyEncoder(json.JSONEncoder):
 
 class SuperEncoder(simplejson.JSONEncoder):
     def default(self, obj: object):
-        if isinstance(obj, np.integer):
+        if isinstance(obj, integer):
             return int(obj)
-        elif isinstance(obj, np.floating):
+        elif isinstance(obj, floating):
             return float(obj)
-        elif isinstance(obj, np.ndarray):
+        elif isinstance(obj, ndarray):
             return obj.tolist()
-        elif isinstance(obj, pd.Timestamp):
-            return datetime_string(pd.to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
+        elif isinstance(obj, Timestamp):
+            return datetime_string(to_datetime(obj, "%Y-%m-%d %H:%M:%S"))
         elif isinstance(obj, bytes):
             return str(obj, 'utf-8')
         else:

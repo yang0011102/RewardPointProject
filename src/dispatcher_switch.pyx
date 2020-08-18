@@ -9,7 +9,7 @@ from InterfaceModules.activity import ActivityInterface
 from InterfaceModules.upload import UploadInterface
 from InterfaceModules.shoppingCart import ShoppingCartInterface
 from InterfaceModules.order import OrderInterface
-from config.dbconfig import *
+from config import *
 from pre_check import *
 from tool import *
 

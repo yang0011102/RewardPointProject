@@ -4,8 +4,7 @@ import logging
 from flask import Flask, request, jsonify, Response
 
 from InterfaceModules.dd import DDInterface
-from config.config import *
-from config.dbconfig import *
+from config import *
 from flask_cors import CORS
 from dispatcher_switch import dispatcher
 from tool.tool import *
