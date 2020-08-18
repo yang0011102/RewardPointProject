@@ -139,6 +139,9 @@ class RewardPointInterface(BaseRewardPointInterface):
             notemptyflag = 1
         else:
             notemptyflag = 0
+        # 是否取离职人员
+        if data_in.get('onduty')==0: # 0取在职的
+            query_item.append("hi_psnjob.endflag ='N' and hi_psnjob. poststat='Y'")
         if data_in.get('name'):  # 姓名
             query_item.append(f"bd_psndoc.name='{data_in.get('name')}'")
         if data_in.get('jobid'):
@@ -240,6 +243,10 @@ class RewardPointInterface(BaseRewardPointInterface):
             notemptyflag = 1
         else:
             notemptyflag = 0
+        # 是否取离职人员
+        if data_in.get('onduty')==0: # 0取在职的
+            query_item.append("hi_psnjob.endflag ='N' and hi_psnjob. poststat='Y'")
+
         if data_in.get('jobid'):
             query_item.append(f"bd_psndoc.code = '{data_in.get('jobid')}'")
         if data_in.get('name'):

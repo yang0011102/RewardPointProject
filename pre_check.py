@@ -26,7 +26,9 @@ check_delete_rewardPoint = ["RewardPointsdetailID"]  # 必填
 
 # 导出积分明细
 pre_export_rewardPoint = {"name": str, "jobid": str, "isBonus": int, "isAccounted": int,
-                          'rewardPointsType': str,
+                          "beginDate": str, "endDate": str,
+                          "page": int, "pageSize": int,
+                          "rewardPointsType": str,
                           "Operator": str}
 check_export_rewardPoint = ["Operator"]  # 必填
 
@@ -49,7 +51,7 @@ pre_export_RewardPointSummary = {"name": str, "jobid": str,
 check_export_RewardPointSummary = ["Operator"]  # 必填
 
 # 查询商品信息
-pre_query_goods = {"Name": str, "GoodsCode": int,"Status":int, "page": int, "pageSize": int}
+pre_query_goods = {"Name": str, "GoodsCode": int, "Status": int, "page": int, "pageSize": int}
 check_query_goods = []  # 必填
 
 # 导入商品
@@ -94,15 +96,14 @@ check_query_order = []  # 必填
 pre_query_orderDetail = {"PointOrderID": str}
 check_query_orderDetail = ["PointOrderID"]  # 必填
 
-
 # 查询固定积分
-pre_query_FixedPoints= {"jobid": str,'name':str,'pageSize':int,"page":int}
+pre_query_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int}
 check_query_FixedPoints = []  # 必填
 
 # 导出固定积分
-pre_export_FixedPoints= {"jobid": str,'name':str,'pageSize':int,"page":int,"Operator":str}
+pre_export_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int, "Operator": str}
 check_export_FixedPoints = ["Operator"]  # 必填
 
 # 按年查询管理积分总和
-pre_query_FixedPoints_ByYear= {"jobid": str,'year':int}
-check_query_FixedPoints_ByYear = ["jobid",'year']  # 必填
+pre_query_FixedPoints_ByYear = {"jobid": str, 'year': int}
+check_query_FixedPoints_ByYear = ["jobid", 'year']  # 必填
