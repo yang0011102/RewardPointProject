@@ -8,7 +8,8 @@ from time import time
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 # data={"jobid":"110424"}
-data={'pageSize':10,'page':1,
+data={
+      'pageSize':10,'page':1,
       "onduty":0
       }
 t1=time()

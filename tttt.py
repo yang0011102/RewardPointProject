@@ -1,5 +1,4 @@
 # utf-8
-import pymssql
-# import cx_Oracle
-import datetime
-print(datetime)
+from tool import *
+from datetime import datetime
+print(sub_datetime_Bydayone(datetime(year=2015,month=12,day=25),datetime(year=2020,month=12,day=31)))
