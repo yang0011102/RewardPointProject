@@ -42,7 +42,7 @@ check_B_RewardPoint = ["jobid"]  # 必填
 
 # 积分汇总查询
 pre_query_RewardPointSummary = {"name": str, "jobid": str,
-                                "page": int, "pageSize": int, }
+                                "page": int, "pageSize": int, "onduty": int}
 check_query_RewardPointSummary = []  # 必填
 
 # 积分汇总导出
@@ -97,7 +97,7 @@ pre_query_orderDetail = {"PointOrderID": str}
 check_query_orderDetail = ["PointOrderID"]  # 必填
 
 # 查询固定积分
-pre_query_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int}
+pre_query_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int, "onduty": int}
 check_query_FixedPoints = []  # 必填
 
 # 导出固定积分

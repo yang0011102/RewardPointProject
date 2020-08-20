@@ -10,7 +10,7 @@ worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 # data={"jobid":"110424"}
 data={
       'pageSize':10,'page':1,
-      "onduty":0
+      "onduty":1
       }
 t1=time()
 # res=worker.query_FixedPointDetail(data_in=data)
