@@ -14,7 +14,7 @@ data = {"jobid": "100004"}
 #       "onduty":1
 #       }
 t1 = time()
-res = worker.query_FixedPointDetail(data_in=data)
-# res=worker.query_FixedPoints(data_in=data)
+# res = worker.query_FixedPointDetail(data_in=data)
+res=worker._base_query_RewardPointSummary(data_in=data)
 print("time costs:", f"{time() - t1:.2f}")
 print(res)
