@@ -1,10 +1,10 @@
 # utf-8
-import pymssql, cx_Oracle, datetime
+import pymssql, cx_Oracle
 from tool import *
 from DBUtils.PooledDB import PooledDB
 from pandas import DataFrame, read_sql, isna
-
-
+from datetime import datetime
+from numpy import around
 class BaseRewardPointInterface:
     def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体
@@ -40,7 +40,7 @@ class BaseRewardPointInterface:
 
     def _get_A_managePoint(self, con: pymssql.Connection, str id, bint notemptyflag, int thisyear) -> DataFrame:
         cdef str mssql_base_sql = "select dt.*,dt.总可用管理积分-isnull(od.pointuse,0) as 现有管理积分 from (select dt.JobId,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=0 then dt.MinusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 and dt.IsAccounted=1 then dt.ChangeAmount else 0 end) as 现有A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总可用管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>{0[0]} then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 and dt.AssessmentDate>{0[0]} then dt.MinusPoints else 0 end) as 年度管理积分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=1 then dt.BonusPoints else 0 end) as 总获得A分,sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.BonusPoints else 0 end)-sum(case when dt.DataStatus=0 and dt.RewardPointsTypeID=3 and dt.ChangeType=0 then dt.MinusPoints else 0 end) as 总获得管理积分 from RewardPointDB.dbo.RewardPointsDetail dt where dt.DataStatus=0 group by dt.JobId) as dt left join (select JobId,sum(case when od.DataStatus=0 and od.OrderStatus in (0,1,2) then od.TotalPrice else 0 end) as pointuse from RewardPointDB.dbo.PointOrder od group by JobId) od on od.JobId=dt.JobId "
-        cdef list sql_item = ["\'" + datetime_string(datetime.datetime(year=thisyear - 1, month=12, day=31)) + "\'", ]
+        cdef list sql_item = ["\'" + datetime_string(datetime(year=thisyear - 1, month=12, day=31)) + "\'", ]
         if notemptyflag:
             query_item = [f"where dt.JobId in ({id})"]
         else:
@@ -116,26 +116,26 @@ class BaseRewardPointInterface:
                     tittle_name = _tn
         return TittlePoint, tittle_rank, tittle_name
 
-    def _count_serveragePoint(self, manServing_df: DataFrame, serving_count_time: datetime.datetime, str man,
+    def _count_serveragePoint(self, manServing_df: DataFrame, serving_count_time: datetime, str man,
                               int thisyear):
         cdef int years, months, ServingAgePoints
-        serving_begindate = datetime.datetime.strptime(
+        serving_begindate = datetime.strptime(
             manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
         if serving_begindate.__le__(serving_count_time):  # 如果早于serving_count_time,那么从serving_count_time开始算
             serving_begindate = serving_count_time
-        if serving_begindate.__lt__(datetime.datetime(year=2018, month=1, day=1)):
-            if serving_begindate.__lt__(datetime.datetime(year=serving_begindate.year, month=8, day=1)):  # 如果早于当年8.1
-                serving_begindate = datetime.datetime(year=serving_begindate.year, month=1, day=1)  # 从当年元旦开始计算
+        elif serving_begindate.__le__(datetime(year=2018, month=7, day=1)): #如果入职时间早于2018.7.1
+            if serving_begindate.__le__(datetime(year=serving_begindate.year, month=7, day=1)):  # 如果早于当年7.1
+                serving_begindate = datetime(year=serving_begindate.year, month=1, day=1)  # 从当年元旦开始计算
             else:
-                serving_begindate = datetime.datetime(year=serving_begindate.year + 1, month=1, day=1)  # 从下年元旦开始计算
+                serving_begindate = datetime(year=serving_begindate.year + 1, month=1, day=1)  # 从下年元旦开始计算
         years, months = countTime_NewYear(beginDate=serving_begindate,
-                                          endDate=datetime.datetime(year=thisyear, month=12, day=30))
-        ServingAgePoints = np.around((years + months / 12) * 2000)
+                                          endDate=datetime(year=thisyear, month=12, day=30))
+        ServingAgePoints = around((years + months / 12) * 2000)
         return ServingAgePoints, serving_begindate, years, months
 
     def _count_jobrankpoint(self, jobrank_df: DataFrame, str man, int thisyear,
-                            jobrank_count_time: datetime.datetime,
-                            jobrank_begin_time: datetime.datetime):
+                            jobrank_count_time: datetime,
+                            jobrank_begin_time: datetime):
         cdef float jobrankpoint = 0
         cdef list jobrank_data = []  # 职务积分详情容器
         cdef bint islatest
@@ -143,25 +143,25 @@ class BaseRewardPointInterface:
         cdef float temp_jobrankpoint
         man_workinfo = jobrank_df.loc[jobrank_df['CODE'] == man, :].reset_index()  # 取个人的工作信息
         if len(man_workinfo) > 0:
-            jobrank_begindate = datetime.datetime.strptime(man_workinfo.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
+            jobrank_begindate = datetime.strptime(man_workinfo.loc[0, 'BEGINDATE'], "%Y-%m-%d")  # 取起始时间
             if jobrank_begindate.__le__(jobrank_count_time):  # 如果早于jobrank_count_time,那么从jobrank_begin_time开始算
                 jobrank_begindate = jobrank_begin_time
             man_workinfo.loc[0, 'BEGINDATE'] = jobrank_begindate  # 填回去
             for work_index in man_workinfo.index:
                 if isna(man_workinfo.loc[work_index, 'ENDDATE']):
-                    temp_enddate = datetime.datetime(year=thisyear, month=12, day=31)
+                    temp_enddate = datetime(year=thisyear, month=12, day=31)
                     islatest = True
                 else:
-                    temp_enddate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
+                    temp_enddate = datetime.strptime(man_workinfo.loc[work_index, 'ENDDATE'], "%Y-%m-%d")
                     islatest = False
                 if isinstance(man_workinfo.loc[work_index, 'BEGINDATE'], str):
-                    temp_begindate = datetime.datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'],
+                    temp_begindate = datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'],
                                                                 "%Y-%m-%d")
                 else:
                     temp_begindate = man_workinfo.loc[work_index, 'BEGINDATE']
 
                 months = sub_datetime_Bydayone(beginDate=temp_begindate, endDate=temp_enddate)
-                temp_jobrankpoint = np.around(man_workinfo.loc[work_index, 'PointsAmount'] * months / 12)
+                temp_jobrankpoint = around(man_workinfo.loc[work_index, 'PointsAmount'] * months / 12)
                 jobrankpoint += temp_jobrankpoint
                 jobrank_data.append({'begindate': datetime_string(temp_begindate, timeType="%Y-%m-%d"),
                                      'enddate': datetime_string(temp_enddate, timeType="%Y-%m-%d"),
