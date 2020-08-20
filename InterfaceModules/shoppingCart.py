@@ -6,7 +6,7 @@
 import cx_Oracle
 import pymssql
 
-from tool.tool import *
+from tool import *
 
 import os
 basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -130,7 +130,7 @@ class ShoppingCartInterface:
                     AND g.DataStatus = 0
                     AND g.Status = 0
                     AND sc.JobId = %s'''%(JobId)
-        res = pd.read_sql(sql=sql, con=self.db_mssql)
+        res = read_sql(sql=sql, con=self.db_mssql)
         return res
 
     # 判断商品是否已在购物车
@@ -138,7 +138,7 @@ class ShoppingCartInterface:
         GoodsID = data_in.get("GoodsID")
         Operator = data_in.get("Operator")
         sql = "SELECT * FROM ShoppingCart WHERE Status = 1 AND DataStatus = 0 AND JobId=%s AND GoodsID = %d" %(Operator,GoodsID)
-        res = pd.read_sql(sql=sql, con=self.db_mssql)
+        res = read_sql(sql=sql, con=self.db_mssql)
         if len(df_tolist(res)) > 0:
             flag = True
             ShoppingCartID = df_tolist(res)[0].get("ShoppingCartID")
@@ -160,7 +160,7 @@ class ShoppingCartInterface:
     # 查询商品的总入库
     def getGoodsTotalIn(self, GoodsID):
         sql = "SELECT sid.GoodsID, SUM(sid.ChangeAmount) AS TotalIn FROM StockInDetail sid WHERE sid.DataStatus = 0 AND sid.GoodsID = %s GROUP BY sid.GoodsID"%(GoodsID)
-        info = pd.read_sql(sql=sql, con=self.db_mssql)
+        info = read_sql(sql=sql, con=self.db_mssql)
         TotalIn = 0
         if len(df_tolist(info)) > 0:
             detail = df_tolist(info)[0]
@@ -172,7 +172,7 @@ class ShoppingCartInterface:
     def getGoodsTotalOut(self, GoodsID):
         sql = "SELECT sod.GoodsID, SUM(sod.ChangeAmount) AS TotalOut FROM StockOutDetail sod WHERE sod.DataStatus = 0 AND sod.GoodsID = %s GROUP BY sod.GoodsID" % (
             GoodsID)
-        info = pd.read_sql(sql=sql, con=self.db_mssql)
+        info = read_sql(sql=sql, con=self.db_mssql)
         TotalOut = 0
         if len(df_tolist(info)) > 0:
             detail = df_tolist(info)[0]

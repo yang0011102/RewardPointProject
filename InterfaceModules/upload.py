@@ -5,8 +5,7 @@
 
 import cx_Oracle
 import pymssql
-from tool.tool import *
-
+from time import time
 import os
 basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -29,7 +28,7 @@ class UploadInterface:
         tempList = imgName.split('.')
         length = len(tempList)
         imgType = tempList[length-1]
-        filename = str(data_in.get("Operator")) + str(time.time()) +"."+imgType
+        filename = str(data_in.get("Operator")) + str(time()) +"."+imgType
         # 图片path和名称组成图片的保存路径
         file_path = path + filename
 

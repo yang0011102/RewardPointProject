@@ -6,7 +6,7 @@
 import cx_Oracle
 import pymssql
 
-from tool.tool import *
+from tool import *
 
 import os
 basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -155,5 +155,5 @@ class OrderInterface:
                            AND g.DataStatus = 0
                            AND g.Status = 0
                            AND sc.JobId = %s''' % (JobId)
-        res = pd.read_sql(sql=sql, con=self.db_mssql)
+        res = read_sql(sql=sql, con=self.db_mssql)
         return df_tolist(res)

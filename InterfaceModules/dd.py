@@ -6,7 +6,7 @@
 import cx_Oracle
 import pymssql
 
-from tool.tool import *
+from tool import *
 
 from dingtalk.client import SecretClient
 import requests

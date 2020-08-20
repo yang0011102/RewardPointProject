@@ -6,7 +6,7 @@
 import cx_Oracle
 import pymssql
 
-from tool.tool import *
+from tool import *
 
 import os
 basedir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,8 +51,8 @@ class ActivityInterface:
             totalLength_sql = f'select COUNT([ActivitiesID]) as res from [RewardPointDB].[dbo].[Activities] as dt where dt.Status = 1'
             sql = f'select top {maxTop} * from Activities where ActivitiesID not in (select top {minTop} ActivitiesID from Activities WHERE Status = 1) AND Status = 1'
 
-        res_df = pd.read_sql(sql=sql, con=self.db_mssql)
-        totalLength = pd.read_sql(sql=totalLength_sql, con=self.db_mssql).loc[0, 'res']
+        res_df = read_sql(sql=sql, con=self.db_mssql)
+        totalLength = read_sql(sql=totalLength_sql, con=self.db_mssql).loc[0, 'res']
 
         return totalLength, res_df
 
@@ -60,7 +60,7 @@ class ActivityInterface:
 
         id = data_in.get("id")
         sql = "SELECT * FROM Activities WHERE ActivitiesID = %d"%(id)
-        info = pd.read_sql(sql=sql, con=self.db_mssql)
+        info = read_sql(sql=sql, con=self.db_mssql)
         return info
 
     def editActivityById(self, data_in: dict):
