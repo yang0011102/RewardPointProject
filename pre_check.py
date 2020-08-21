@@ -5,7 +5,7 @@
 # 查询积分明细
 pre_query_rewardPointDetail = {"name": str, "jobid": str, "isBonus": int, "isAccounted": int,
                                "beginDate": str, "endDate": str,
-                               "page": int, "pageSize": int,
+                               "page": int, "pageSize": int, "onduty": int,
                                "rewardPointsType": str, }
 check_query_rewardPointDetail = []  # 必填
 check_dateType_rewardPointDetail = ["beginDate", "endDate"]  # 时间检查项
@@ -27,7 +27,7 @@ check_delete_rewardPoint = ["RewardPointsdetailID"]  # 必填
 # 导出积分明细
 pre_export_rewardPoint = {"name": str, "jobid": str, "isBonus": int, "isAccounted": int,
                           "beginDate": str, "endDate": str,
-                          "page": int, "pageSize": int,
+                          "page": int, "pageSize": int, "onduty": int,
                           "rewardPointsType": str,
                           "Operator": str}
 check_export_rewardPoint = ["Operator"]  # 必填

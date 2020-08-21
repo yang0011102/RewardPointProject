@@ -61,7 +61,10 @@ class RewardPointInterface(BaseRewardPointInterface):
         cdef float totalLength
         mssql_con = self.mssql_pool.connection()
         if data_in:  # 不为空则按照条件查询
-            totalLength_sql = "select COUNT([RewardPointsdetailID]) as res from [RewardPointDB].[dbo].[RewardPointsDetail] as dt join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId"
+            totalLength_sql = "select COUNT([RewardPointsdetailID]) as res from [RewardPointDB].[dbo].[RewardPointsDetail] as dt " \
+                              "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
+                              "right hash join openquery(NC,'select name, code from hi_psnjob left join bd_psndoc on hi_psnjob.pk_psndoc = bd_psndoc.pk_psndoc " \
+                              "where enablestate = 2 and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' {}') as NCDB on NCDB.CODE = dt.JobId"
             query_item = ["dt.DataStatus=0", "a.DataStatus=0"]  # 查询条件
             sql_item = []  # sql拼接条件
             # 工号
@@ -103,7 +106,8 @@ class RewardPointInterface(BaseRewardPointInterface):
                        "dt.ChangeAmount,dt.Reason,dt.Proof,dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted " \
                        "from [RewardPointDB].[dbo].[RewardPointsDetail] dt " \
                        "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
-                       "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
+                       "right hash join openquery(NC,'select name, code from hi_psnjob left join bd_psndoc on hi_psnjob.pk_psndoc = bd_psndoc.pk_psndoc " \
+                       "where enablestate = 2 and hi_psnjob.ismainjob =''Y'' and hi_psnjob.lastflag  =''Y'' {0[3]}') as NCDB on NCDB.CODE = dt.JobId " \
                        "{0[1]} order by dt.RewardPointsdetailID desc {0[2]}"
             # 分页
             sql_item.append(query_sql)
@@ -112,10 +116,14 @@ class RewardPointInterface(BaseRewardPointInterface):
             else:
                 sql_item.append(" offset {0[0]}*({0[1]}-1) rows fetch next {0[0]} rows only".format(
                     [data_in.get("pageSize"), data_in.get("page")]))
+            if data_in.get('onduty') == 0:  # 0取在职的
+                sql_item.append("and hi_psnjob.endflag =''N'' and hi_psnjob. poststat=''Y''")
+            else:
+                sql_item.append("")
             res_df = read_sql(sql=base_sql.format(sql_item), con=mssql_con)
             # 计算总行数
             totalLength = \
-                read_sql(sql=totalLength_sql + " where " + ' and '.join(query_item), con=mssql_con).loc[0, 'res']
+                read_sql(sql=totalLength_sql.format(sql_item[3]) + " where " + ' and '.join(query_item), con=mssql_con).loc[0, 'res']
         else:
             totalLength_sql = "select COUNT([RewardPointsdetailID]) as res from [RewardPointDB].[dbo].[RewardPointsDetail]"
             totalLength = read_sql(sql=totalLength_sql, con=mssql_con).loc[0, 'res']
