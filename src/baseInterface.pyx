@@ -176,22 +176,30 @@ class BaseRewardPointInterface:
 
     def _get_departmentFullPath(self, maninfo_df: DataFrame, con: cx_Oracle.Connection):
         cdef str temp_path, PK_FATHERORG, PK_DEPT
+        cdef list path_list
         dep_df = read_sql(
             "select dept.pk_dept, dept.pk_fatherorg, dept.name from org_dept dept where dept.depttype=0 and dept.enablestate=2",
-            con=con).reindex(columns=('PK_DEPT', 'PK_FATHERORG', 'NAME', "FULLPATH")).fillna({'PK_FATHERORG': "~"})
+            con=con).reindex(columns=('PK_DEPT', 'PK_FATHERORG', 'NAME', "FULLPATH", "DEP1", "DEP2")).fillna(
+            {'PK_FATHERORG': "~"})
         for _index in maninfo_df.index:
             PK_DEPT = maninfo_df.loc[_index, "PK_DEPT"]
             exist_FullPath = dep_df.loc[
                 (dep_df["PK_DEPT"] == PK_DEPT) & (dep_df["FULLPATH"].notnull()), "FULLPATH"].notnull()
             if len(exist_FullPath) == 0:  # 如果没有算好的,那就算一个
-                temp_path = maninfo_df.loc[_index, "部门"]
+                path_list = [maninfo_df.loc[_index, "部门"]]
                 while True:
                     PK_FATHERORG = dep_df.loc[dep_df["PK_DEPT"] == PK_DEPT, "PK_FATHERORG"].values[0]
                     if PK_FATHERORG == "~":
                         break
                     PK_DEPT = PK_FATHERORG
-                    temp_path += ',' + dep_df.loc[dep_df["PK_DEPT"] == PK_FATHERORG, "NAME"].values[0]
-                maninfo_df.loc[_index, "FULLPATH"] = temp_path
+                    path_list.append(dep_df.loc[dep_df["PK_DEPT"] == PK_FATHERORG, "NAME"].values[0])
+                maninfo_df.loc[_index, "FULLPATH"] = ",".join(path_list)
+                maninfo_df.loc[_index, "DEP1"] = path_list[-1]
+                maninfo_df.loc[_index, "DEP2"] = lambda x: path_list[-2] if len(path_list) > 1 else ""
             else:
                 maninfo_df.loc[_index, "FULLPATH"] = exist_FullPath.values[0]
+                maninfo_df.loc[_index, "DEP1"] = dep_df.loc[
+                    (dep_df["PK_DEPT"] == PK_DEPT) & (dep_df["FULLPATH"].notnull()), "DEP1"].notnull()
+                maninfo_df.loc[_index, "DEP2"] = dep_df.loc[
+                    (dep_df["PK_DEPT"] == PK_DEPT) & (dep_df["FULLPATH"].notnull()), "DEP2"].notnull()
         return maninfo_df

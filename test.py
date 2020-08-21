@@ -10,11 +10,11 @@ from time import time
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 # data = {"jobid": "100004"}
 data = {
-    'pageSize': 10, 'page': 1,
+    'pageSize': 10, 'page': 2,
     "onduty": 0
 }
 t1 = time()
-res = worker._base_query_rewardPointDetail(data_in=data)
+res = worker._base_query_FixedPoints(data_in=data)
 print(res)
 # _,res=worker._base_query_FixedPoints(data_in=data)
 print("time costs:", f"{time() - t1:.2f}")

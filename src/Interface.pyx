@@ -309,7 +309,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         maninfo_sql = maninfo_base_sql.format(sql_item)
         maninfo_df = super(RewardPointInterface, self)._get_departmentFullPath(
             read_sql(sql=maninfo_sql, con=nc_con).reindex(columns=(
-                '姓名', '工号', '组织', '部门', "职务", "FULLPATH", "PK_DEPT")), nc_con)
+                '姓名', '工号', '组织', '部门', "职务", "FULLPATH", "PK_DEPT","DEP1","DEP2")), nc_con)
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
         res_df = DataFrame(
