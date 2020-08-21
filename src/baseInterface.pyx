@@ -4,7 +4,10 @@ from tool import *
 from DBUtils.PooledDB import PooledDB
 from pandas import DataFrame, read_sql, isna
 from datetime import datetime
-from numpy import around
+from numpy import around, nan
+from cython import infer_types
+
+
 class BaseRewardPointInterface:
     def __init__(self, dict mssqlDbInfo, dict ncDbInfo):
         # 数据库连接体
@@ -123,7 +126,7 @@ class BaseRewardPointInterface:
             manServing_df.loc[manServing_df['CODE'] == man, 'BEGINDATE'].values[0], "%Y-%m-%d")  # 取起始时间
         if serving_begindate.__le__(serving_count_time):  # 如果早于serving_count_time,那么从serving_count_time开始算
             serving_begindate = serving_count_time
-        elif serving_begindate.__le__(datetime(year=2018, month=7, day=1)): #如果入职时间早于2018.7.1
+        elif serving_begindate.__le__(datetime(year=2018, month=7, day=1)):  #如果入职时间早于2018.7.1
             if serving_begindate.__le__(datetime(year=serving_begindate.year, month=7, day=1)):  # 如果早于当年7.1
                 serving_begindate = datetime(year=serving_begindate.year, month=1, day=1)  # 从当年元旦开始计算
             else:
@@ -156,7 +159,7 @@ class BaseRewardPointInterface:
                     islatest = False
                 if isinstance(man_workinfo.loc[work_index, 'BEGINDATE'], str):
                     temp_begindate = datetime.strptime(man_workinfo.loc[work_index, 'BEGINDATE'],
-                                                                "%Y-%m-%d")
+                                                       "%Y-%m-%d")
                 else:
                     temp_begindate = man_workinfo.loc[work_index, 'BEGINDATE']
 
@@ -171,3 +174,25 @@ class BaseRewardPointInterface:
                                      'jobrankpoint': temp_jobrankpoint})
 
         return jobrankpoint, jobrank_data
+
+    def _get_departmentFullPath(self, maninfo_df: DataFrame, con: cx_Oracle.Connection):
+        cdef str temp_path, PK_FATHERORG, PK_DEPT
+        dep_df = read_sql(
+            "select dept.pk_dept, dept.pk_fatherorg, dept.name from org_dept dept where dept.depttype=0 and dept.enablestate=2",
+            con=con).reindex(columns=('PK_DEPT', 'PK_FATHERORG', 'NAME', "FULLPATH")).fillna({'PK_FATHERORG': "~"})
+        for _index in maninfo_df.index:
+            PK_DEPT = maninfo_df.loc[_index, "PK_DEPT"]
+            exist_FullPath = dep_df.loc[
+                (dep_df["PK_DEPT"] == PK_DEPT) & (dep_df["FULLPATH"].notnull()), "FULLPATH"].notnull()
+            if len(exist_FullPath) == 0:  # 如果没有算好的,那就算一个
+                temp_path = maninfo_df.loc[_index, "部门"]
+                while True:
+                    PK_FATHERORG = dep_df.loc[dep_df["PK_DEPT"] == PK_DEPT, "PK_FATHERORG"].values[0]
+                    if PK_FATHERORG == "~":
+                        break
+                    PK_DEPT = PK_FATHERORG
+                    temp_path += ',' + dep_df.loc[dep_df["PK_DEPT"] == PK_FATHERORG, "NAME"].values[0]
+                maninfo_df.loc[_index, "FULLPATH"] = temp_path
+            else:
+                maninfo_df.loc[_index, "FULLPATH"] = exist_FullPath.values[0]
+        return maninfo_df

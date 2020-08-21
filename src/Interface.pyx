@@ -166,7 +166,8 @@ class RewardPointInterface(BaseRewardPointInterface):
             select * 
             from (
             select  rownum as rowno,
-            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_adminorg.name as 组织,org_dept.name as 部门
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_adminorg.name as 组织,org_dept.name as 部门,
+            org_dept.pk_dept
             from hi_psnjob
             join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
             left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
@@ -179,7 +180,8 @@ class RewardPointInterface(BaseRewardPointInterface):
         else:
             maninfo_base_sql = '''
             select  
-            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,org_adminorg.name as 组织
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,org_adminorg.name as 组织,
+            org_dept.pk_dept
             from hi_psnjob
             join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
             left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
@@ -188,9 +190,10 @@ class RewardPointInterface(BaseRewardPointInterface):
             {0[0]}
             '''
             sql_item = [" where " + ' and '.join(query_item)]
-        maninfo_df = read_sql(sql=maninfo_base_sql.format(sql_item), con=nc_con)
-        maninfo_df = maninfo_df.reindex(columns=(
-            '姓名', '工号', '组织', '部门', '职称等级', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
+        maninfo_df = read_sql(sql=maninfo_base_sql.format(sql_item), con=nc_con).reindex(columns=(
+            '姓名', '工号', '组织', '部门', "FULLPATH", "PK_DEPT"))
+        maninfo_df = super(RewardPointInterface, self)._get_departmentFullPath(maninfo_df, nc_con).reindex(columns=(
+            '姓名', '工号', '组织', '部门', "FULLPATH", '职称等级', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
         all_id = maninfo_df['工号'].tolist()
         if len(all_id) == 0:
             return 0, maninfo_df
@@ -275,7 +278,7 @@ class RewardPointInterface(BaseRewardPointInterface):
             select * 
             from (
             select rownum as rowno,
-            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,om_job.jobname  as 职务,org_adminorg.name as 组织
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,om_job.jobname  as 职务,org_adminorg.name as 组织,org_dept.pk_dept
             from hi_psnjob
             left join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
             left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
@@ -287,7 +290,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         else:
             maninfo_base_sql = '''
             select 
-            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,om_job.jobname  as 职务,org_adminorg.name as 组织
+            bd_psndoc.name as 姓名,bd_psndoc.code as 工号,org_dept.name as 部门,om_job.jobname  as 职务,org_adminorg.name as 组织,org_dept.pk_dept
             from hi_psnjob
             left join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc
             left join org_dept on org_dept.pk_dept =hi_psnjob.pk_dept
@@ -296,11 +299,13 @@ class RewardPointInterface(BaseRewardPointInterface):
             left join bd_psncl on bd_psncl.pk_psncl=hi_psnjob. pk_psncl  {0[0]} '''
             sql_item = [" where " + ' and '.join(query_item)]
         maninfo_sql = maninfo_base_sql.format(sql_item)
-        maninfo_df = read_sql(sql=maninfo_sql, con=nc_con)
+        maninfo_df = super(RewardPointInterface, self)._get_departmentFullPath(
+            read_sql(sql=maninfo_sql, con=nc_con).reindex(columns=(
+                '姓名', '工号', '组织', '部门', "职务", "FULLPATH", "PK_DEPT")), nc_con)
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
         res_df = DataFrame(
-            columns=('姓名', '工号', '部门', '组织', '职务', '职称积分', '学历积分', '工龄积分', '职务积分', '学历', '入职时间', '职称'))
+            columns=('姓名', '工号', '部门', '组织', '职务', "FULLPATH", '职称积分', '学历积分', '工龄积分', '职务积分', '学历', '入职时间', '职称'))
         res_df['工号'] = all_id
         if len(all_id) == 0:
             return 0, res_df
@@ -320,7 +325,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         for _index in res_df.index:
             man = res_df.loc[_index, '工号']
             man_select = maninfo_df['工号'] == man
-            for _item in ['姓名', '部门', '职务', '组织']:
+            for _item in ['姓名', '部门', '职务', '组织', "FULLPATH"]:
                 if len(maninfo_df.loc[man_select, _item]) > 0:
                     res_df.loc[_index, _item] = maninfo_df.loc[man_select, _item].values[0]
             #  学历积分
