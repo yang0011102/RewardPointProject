@@ -151,7 +151,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         today = datetime.datetime.today()  # 今天
         cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                                 "bd_psndoc.enablestate =2",
-                                "bd_psncl.name not in ('独立业务员')",
+                                "bd_psncl.name not in ('独立业务员','离职挂账员工')",
                                 "regexp_like(org_adminorg.name,'(威腾电气|威通|西屋)')"]
         cdef bint notemptyflag, is985211  # notemptyflag:无条件判断指示,用于标记在取子表数据时是否将人员作为一个条件
         cdef str maninfo_base_sql, all_id_tupe, education, schoolname, tittle_rank, tittle_name
@@ -264,7 +264,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         nc_con = self.nc_pool.connection()
         cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                                 "bd_psndoc.enablestate =2",
-                                "bd_psncl.name not in ('独立业务员')",
+                                "bd_psncl.name not in ('独立业务员','离职挂账员工')",
                                 "regexp_like(org_adminorg.name,'(威腾电气|威通|西屋)')"]
         cdef bint notemptyflag  # 无条件判断指示,用于标记在取子表数据时是否将人员作为一个条件
         cdef str maninfo_base_sql, maninfo_sql, all_id_tupe, man, education, schoolname, tittle_name
