@@ -37,7 +37,7 @@ pre_account_rewardPoint = {"RewardPointsdetailID": str, "jobid": str, }
 check_account_rewardPoint = []  # 必填
 
 # 查询固定积分明细
-pre_B_RewardPoint = {"jobid": str, }
+pre_B_RewardPoint = {"jobid": str, "onduty": int}
 check_B_RewardPoint = ["jobid"]  # 必填
 
 # 积分汇总查询
@@ -47,7 +47,7 @@ check_query_RewardPointSummary = []  # 必填
 
 # 积分汇总导出
 pre_export_RewardPointSummary = {"name": str, "jobid": str,
-                                 "page": int, "pageSize": int, "Operator": str}
+                                 "page": int, "pageSize": int, "Operator": str, "onduty": int}
 check_export_RewardPointSummary = ["Operator"]  # 必填
 
 # 查询商品信息
@@ -101,7 +101,7 @@ pre_query_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int
 check_query_FixedPoints = []  # 必填
 
 # 导出固定积分
-pre_export_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int, "Operator": str}
+pre_export_FixedPoints = {"jobid": str, 'name': str, 'pageSize': int, "page": int, "Operator": str, "onduty": int}
 check_export_FixedPoints = ["Operator"]  # 必填
 
 # 按年查询管理积分总和

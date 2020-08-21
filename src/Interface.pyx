@@ -487,8 +487,11 @@ class RewardPointInterface(BaseRewardPointInterface):
         man_data = {}
         man_data['工号'] = data_in.get('jobid')
         maninfo_base_sql = "select bd_psndoc.name as 姓名,bd_psndoc.code as 工号 from hi_psnjob join bd_psndoc on hi_psnjob.pk_psndoc=bd_psndoc.pk_psndoc"
-        query_item = ["hi_psnjob.endflag ='N'", "hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+        query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
                       "bd_psndoc.enablestate =2", f"bd_psndoc.code='{man}'"]
+        # 是否取离职人员
+        if data_in.get('onduty') == 0:  # 0取在职的
+            query_item.append("hi_psnjob.endflag ='N' and hi_psnjob. poststat='Y'")
         maninfo_df = read_sql(sql=maninfo_base_sql + " where " + ' and '.join(query_item), con=nc_con)
         if len(maninfo_df) == 0:
             return man_data
