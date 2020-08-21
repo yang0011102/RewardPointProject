@@ -195,7 +195,7 @@ class BaseRewardPointInterface:
                     path_list.append(dep_df.loc[dep_df["PK_DEPT"] == PK_FATHERORG, "NAME"].values[0])
                 maninfo_df.loc[_index, "FULLPATH"] = ",".join(path_list)
                 maninfo_df.loc[_index, "DEP1"] = path_list[-1]
-                maninfo_df.loc[_index, "DEP2"] = lambda x: path_list[-2] if len(path_list) > 1 else ""
+                maninfo_df.loc[_index, "DEP2"] = path_list[-2] if len(path_list) > 1 else " "
             else:
                 maninfo_df.loc[_index, "FULLPATH"] = exist_FullPath.values[0]
                 maninfo_df.loc[_index, "DEP1"] = dep_df.loc[

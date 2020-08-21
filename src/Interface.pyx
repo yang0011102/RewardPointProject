@@ -123,7 +123,8 @@ class RewardPointInterface(BaseRewardPointInterface):
             res_df = read_sql(sql=base_sql.format(sql_item), con=mssql_con)
             # 计算总行数
             totalLength = \
-                read_sql(sql=totalLength_sql.format(sql_item[3]) + " where " + ' and '.join(query_item), con=mssql_con).loc[0, 'res']
+                read_sql(sql=totalLength_sql.format(sql_item[3]) + " where " + ' and '.join(query_item),
+                         con=mssql_con).loc[0, 'res']
         else:
             totalLength_sql = "select COUNT([RewardPointsdetailID]) as res from [RewardPointDB].[dbo].[RewardPointsDetail]"
             totalLength = read_sql(sql=totalLength_sql, con=mssql_con).loc[0, 'res']
@@ -201,7 +202,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         maninfo_df = read_sql(sql=maninfo_base_sql.format(sql_item), con=nc_con).reindex(columns=(
             '姓名', '工号', '组织', '部门', "FULLPATH", "PK_DEPT"))
         maninfo_df = super(RewardPointInterface, self)._get_departmentFullPath(maninfo_df, nc_con).reindex(columns=(
-            '姓名', '工号', '组织', '部门', "FULLPATH", '职称等级', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
+            '姓名', '工号', '组织', '部门', "FULLPATH", "DEP1", "DEP2", '职称等级', '学历', '学校', '固定积分', '年度累计积分', '总累计积分'))
         all_id = maninfo_df['工号'].tolist()
         if len(all_id) == 0:
             return 0, maninfo_df
@@ -309,7 +310,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         maninfo_sql = maninfo_base_sql.format(sql_item)
         maninfo_df = super(RewardPointInterface, self)._get_departmentFullPath(
             read_sql(sql=maninfo_sql, con=nc_con).reindex(columns=(
-                '姓名', '工号', '组织', '部门', "职务", "FULLPATH", "PK_DEPT","DEP1","DEP2")), nc_con)
+                '姓名', '工号', '组织', '部门', "职务", "FULLPATH", "PK_DEPT", "DEP1", "DEP2")), nc_con)
         tempidlist = []
         all_id = maninfo_df['工号'].tolist()
         res_df = DataFrame(
@@ -333,7 +334,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         for _index in res_df.index:
             man = res_df.loc[_index, '工号']
             man_select = maninfo_df['工号'] == man
-            for _item in ['姓名', '部门', '职务', '组织', "FULLPATH"]:
+            for _item in ['姓名', '部门', '职务', '组织', "FULLPATH", "DEP1", "DEP2"]:
                 if len(maninfo_df.loc[man_select, _item]) > 0:
                     res_df.loc[_index, _item] = maninfo_df.loc[man_select, _item].values[0]
             #  学历积分

@@ -10,7 +10,7 @@ from time import time
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 # data = {"jobid": "100004"}
 data = {
-    'pageSize': 10, 'page': 2,
+    'pageSize': 10, 'page': 5,
     "onduty": 0
 }
 t1 = time()
