@@ -9,3 +9,7 @@ __pycache__/
 /static
 *.pyd
 *.c
+/build
+tttt.py
+test.py
+testAPP.py
