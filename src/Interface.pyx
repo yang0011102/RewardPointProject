@@ -149,15 +149,16 @@ class RewardPointInterface(BaseRewardPointInterface):
         mssql_con = self.mssql_pool.connection()
         nc_con = self.nc_pool.connection()
         today = datetime.datetime.today()  # 今天
-        cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
-                                "bd_psndoc.enablestate =2",
-                                "bd_psncl.name not in ('独立业务员','离职挂账员工')",
-                                "regexp_like(org_adminorg.name,'(威腾电气|威通|西屋)')"]
-        cdef bint notemptyflag, is985211  # notemptyflag:无条件判断指示,用于标记在取子表数据时是否将人员作为一个条件
-        cdef str maninfo_base_sql, all_id_tupe, education, schoolname, tittle_rank, tittle_name
-        cdef list sql_item, all_id, tempidlist, jobrank_data
-        cdef float totalLength, SchoolPoints, TittlePoint, jobrankpoint
-        cdef int ServingAgePoints, years, months
+        cdef:
+            list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+                               "bd_psndoc.enablestate =2",
+                               "bd_psncl.name not in ('独立业务员','离职挂账员工')",
+                               "regexp_like(org_adminorg.name,'(威腾电气|威通|西屋)')"]
+            bint notemptyflag, is985211  # notemptyflag:无条件判断指示,用于标记在取子表数据时是否将人员作为一个条件
+            str maninfo_base_sql, all_id_tupe, education, schoolname, tittle_rank, tittle_name
+            list sql_item, all_id, tempidlist, jobrank_data
+            float totalLength, SchoolPoints, TittlePoint, jobrankpoint
+            int ServingAgePoints, years, months
         if data_in.get('jobid') or data_in.get('name') or data_in.get('pageSize') or data_in.get('page'):
             notemptyflag = 1
         else:
@@ -262,14 +263,16 @@ class RewardPointInterface(BaseRewardPointInterface):
         today = datetime.datetime.today()
         mssql_con = self.mssql_pool.connection()
         nc_con = self.nc_pool.connection()
-        cdef list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
-                                "bd_psndoc.enablestate =2",
-                                "bd_psncl.name not in ('独立业务员','离职挂账员工')",
-                                "regexp_like(org_adminorg.name,'(威腾电气集团|威通|西屋)')"]
-        cdef bint notemptyflag  # 无条件判断指示,用于标记在取子表数据时是否将人员作为一个条件
-        cdef str maninfo_base_sql, maninfo_sql, all_id_tupe, man, education, schoolname, tittle_name
-        cdef list sql_item, tempidlist, all_id
-        cdef float totalLength, SchoolPoints, TittlePoint, ServingAgePoints, jobrankpoint
+        cdef:
+            list query_item = ["hi_psnjob.ismainjob ='Y'", "hi_psnjob.lastflag  ='Y'",
+                               "bd_psndoc.enablestate =2",
+                               "bd_psncl.name not in ('独立业务员','离职挂账员工')",
+                               "regexp_like(org_adminorg.name,'(威腾电气集团|威通|西屋)')"]
+            bint notemptyflag  # 无条件判断指示,用于标记在取子表数据时是否将人员作为一个条件
+            str maninfo_base_sql, maninfo_sql, all_id_tupe, man, education, schoolname, tittle_name
+            list sql_item, tempidlist, all_id
+            float totalLength, SchoolPoints, TittlePoint, ServingAgePoints, jobrankpoint
+            int _index
         if data_in.get('jobid') or data_in.get('name') or data_in.get('pageSize') or data_in.get('page'):
             notemptyflag = 1
         else:
@@ -452,9 +455,10 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        cdef list query_item, sql_item
-        cdef str query_sql, base_sql, totalLength_sql, orderID
-        cdef float totalLength
+        cdef:
+            list query_item, sql_item
+            str query_sql, base_sql, totalLength_sql, orderID
+            float totalLength
         mssql_con = self.mssql_pool.connection()
         query_item = ['ordergoods.DataStatus=0']
         orderID = data_in.get('PointOrderID')
@@ -563,7 +567,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        Operator = data_in.pop("Operator", 404)
+        cdef int Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=Operator)
 
@@ -603,7 +607,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        Operator = data_in.pop("Operator", 404)
+        cdef int Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=Operator)
 
@@ -618,18 +622,21 @@ class RewardPointInterface(BaseRewardPointInterface):
         rewardPointType_df = read_sql(
             "select RewardPointsTypeID,Name from RewardPointDB.dbo.RewardPointsType where DataStatus=0",
             con=mssql_con)
-        cdef str base_sql = '''
+        cdef:
+            str base_sql = '''
         insert into [RewardPointDB].[dbo].[RewardPointsDetail] (
          ChangeType,CreatedBy,JobId,DepartmentLv1,DepartmentLv2,DepartmentLv3,Post,Name,RewardPointsTypeID,BonusPoints,
          MinusPoints,Reason,Proof,ReasonType,FunctionalDepartment,Submit,AssessmentDate ) values{}
         '''
-        cdef list sql_values = []
-        cdef list value_check = ['工号', '一级部门', '二级部门', '三级部门', '职务名称',
-                                 '姓名', 'A分/B分', '加分',
-                                 '减分', '加减分理由', '加减分依据', '理由分类', '职能部门/所在部门管理', '提交部门',
-                                 '考核日期']
-        cdef list values_item
-        cdef float RewardPointsTypeID
+            list sql_values = []
+            list value_check = ['工号', '一级部门', '二级部门', '三级部门', '职务名称',
+                                '姓名', 'A分/B分', '加分',
+                                '减分', '加减分理由', '加减分依据', '理由分类', '职能部门/所在部门管理', '提交部门',
+                                '考核日期']
+            list values_item
+            float RewardPointsTypeID
+            int i
+            str vi
         for i in file_df.index:
             values_item = ['0', data_in.get("Operator")]
             for vi in value_check:
@@ -637,6 +644,7 @@ class RewardPointInterface(BaseRewardPointInterface):
                 if isna(value):
                     values_item.append("\'" + '' + "\'")
                 elif vi == 'A分/B分':  # 连RewardPointsType表查积分类型ID
+                    if value == "B分": value = "管理积分"
                     RewardPointsTypeID = rewardPointType_df.loc[
                         rewardPointType_df['Name'] == value, 'RewardPointsTypeID'].values[0]
                     values_item.append(str(RewardPointsTypeID))
@@ -692,6 +700,7 @@ class RewardPointInterface(BaseRewardPointInterface):
                         sql_values.append("\'" + '' + "\'")
                         continue
                     if k == 'A分/B分':  # 连RewardPointsType表查积分类型ID
+                        if value == "B分": value = "管理积分"
                         RewardPointsTypeID = rewardPointType_df.loc[
                             rewardPointType_df['Name'] == value, 'RewardPointsTypeID'].values[0]
                         sql_values.append(RewardPointsTypeID)

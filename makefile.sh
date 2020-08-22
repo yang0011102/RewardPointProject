@@ -1,6 +1,4 @@
 #/bin/bash/
-find /home/yy/Project/RewardPoint/tool -maxdepth 1 -name '*.so' -type f -exec rm -rf {} \;
-find /home/yy/Project/RewardPoint -maxdepth 1 -name '*.so' -type f -exec rm -rf {} \;
 python /home/yy/Project/RewardPoint/setup.py build_ext --inplace;
 find /home/yy/Project/RewardPoint/src -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
 find /home/yy/Project/RewardPoint/InterfaceModules -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
