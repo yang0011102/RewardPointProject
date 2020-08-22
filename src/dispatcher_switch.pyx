@@ -12,6 +12,7 @@ from InterfaceModules.order import OrderInterface
 from config import *
 from pre_check import *
 from tool import *
+from pandas import read_excel, Timestamp
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
@@ -53,7 +54,7 @@ def dispatcher(str selector, dict data, files=None):
         if not flag:
             return _response
         if worker.import_rewardPoint_onesql(data_in=data,
-                                            file_df=pd.read_excel(files.stream), ):
+                                            file_df=read_excel(files.stream), ):
             _response = {"code": 0,
                          "msg": "",
                          }
@@ -144,7 +145,7 @@ def dispatcher(str selector, dict data, files=None):
         if not flag:
             return _response
         if worker.import_goods(data_in=data,
-                               file_df=pd.read_excel(files.stream), ):
+                               file_df=read_excel(files.stream), ):
             _response = {"code": 0,
                          "msg": "",
                          }
@@ -500,7 +501,7 @@ def pre_check(dict checker, file, dict data, mustFile=None):
             _response = {"code": 4, "msg": f"错误文件类型。key:{file.filename}，请传送{mustFile.get('check_filetype')}类型"}
             return False, _response
         if filetype in ('.xlsx', '.xls'):
-            temp_df = pd.read_excel(file.stream)
+            temp_df = read_excel(file.stream)
             if temp_df.empty:
                 _response = {"code": 5,
                              "msg": f"请勿传送空表"}
@@ -518,7 +519,7 @@ def pre_check(dict checker, file, dict data, mustFile=None):
                 for i in mustFile.get('table_dateType').get('date_column'):
                     for _index in temp_df[i].index.tolist():
                         d_v = temp_df[i][_index]
-                        if isinstance(d_v, pd.Timestamp):
+                        if isinstance(d_v, Timestamp):
                             break
                         _file_dateType_flag = True
                         for j in mustFile.get('table_dateType').get('dateType'):
