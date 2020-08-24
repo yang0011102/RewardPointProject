@@ -567,7 +567,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        cdef int Operator = data_in.pop("Operator", 404)
+        cdef str Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_RewardPointSummary(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=Operator)
 
@@ -607,7 +607,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        cdef int Operator = data_in.pop("Operator", 404)
+        cdef str Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=Operator)
 
@@ -756,7 +756,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        Operator = data_in.pop("Operator", 404)
+        cdef str Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_goods(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=Operator)
 
@@ -859,7 +859,7 @@ class RewardPointInterface(BaseRewardPointInterface):
         :param data_in:
         :return:
         '''
-        Operator = data_in.pop("Operator", 404)
+        cdef str Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_FixedPoints(data_in=data_in)
         return get_dfUrl(df=res_df, Operator=Operator)
 
