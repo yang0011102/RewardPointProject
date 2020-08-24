@@ -59,7 +59,11 @@ class RewardPointInterface(BaseRewardPointInterface):
         cdef str totalLength_sql, beginDate, endDate, rewardPointsType, manName, query_sql, base_sql
         cdef list sql_item, query_item, _rewardPointsType_container
         cdef float totalLength
-        mssql_con = self.mssql_pool.connection()
+        mssqldb = {"host": "192.168.40.229:1433", "user": "serverapp", "password": "wetown2020", "database": "RewardPointDB",
+           "charset": "utf8"}
+        import pymssql
+        mssql_con=pymssql.connect(**mssqldb)
+        # mssql_con = self.mssql_pool.connection()
         if data_in:  # 不为空则按照条件查询
             totalLength_sql = "select COUNT([RewardPointsdetailID]) as res from [RewardPointDB].[dbo].[RewardPointsDetail] as dt " \
                               "join [RewardPointDB].[dbo].[RewardPointsType] a on dt.RewardPointsTypeID=a.RewardPointsTypeID " \
@@ -101,7 +105,7 @@ class RewardPointInterface(BaseRewardPointInterface):
                 sql_item.append("dt.MinusPoints")
                 query_item.append("dt.MinusPoints > 0")
             query_sql = ' where ' + ' and '.join(query_item)
-            base_sql = "select dt.RewardPointsdetailID,dt.DepartmentLv1,dt.DepartmentLv2,dt.DepartmentLv3," \
+            base_sql = "select dt.RewardPointsdetailID,dt.DepartmentLv1 ,dt.DepartmentLv2,dt.DepartmentLv3," \
                        "dt.FunctionalDepartment,NCDB.NAME as Name,dt.Submit,dt.Post,a.Name as 积分类型,{0[0]},dt.ChangeType," \
                        "dt.ChangeAmount,dt.Reason,dt.Proof,dt.ReasonType,dt.JobId,dt.AssessmentDate,dt.IsAccounted " \
                        "from [RewardPointDB].[dbo].[RewardPointsDetail] dt " \
@@ -137,6 +141,7 @@ class RewardPointInterface(BaseRewardPointInterface):
                        "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
                        "where dt.DataStatus=0 and a.DataStatus=0"
             res_df = read_sql(sql=base_sql, con=mssql_con)
+        print(res_df)
         return totalLength, res_df
 
     def _base_query_RewardPointSummary(self, dict data_in) -> (int, DataFrame):
@@ -609,7 +614,14 @@ class RewardPointInterface(BaseRewardPointInterface):
         '''
         cdef str Operator = data_in.pop("Operator", 404)
         _, res_df = self._base_query_rewardPointDetail(data_in=data_in)
-        return get_dfUrl(df=res_df, Operator=Operator)
+        return get_dfUrl(df=res_df.rename(columns={'RewardPointsdetailID': '数据ID', 'DepartmentLv1': '一级部门',
+                                                   "DepartmentLv2": "二级部门", "DepartmentLv3": "三级部门",
+                                                   "BonusPoints": "加分", "MinusPoints": "减分", "Name": "姓名",
+                                                   "Submit": "提交部门", "Post": "职务名称", "ChangeAmount": "数量",
+                                                   "Reason": "加减分理由", "Proof": "加减分依据", "ReasonType": "理由分类",
+                                                   "JobId": "工号", "AssessmentDate": "考核日期", "IsAccounted": "是否结算",
+                                                   "FunctionalDepartment":"职能部门","ChangeType":"变动类型"}),
+                         Operator=Operator)
 
     def import_rewardPoint_onesql(self, dict data_in, file_df: DataFrame) -> bool:
         '''
