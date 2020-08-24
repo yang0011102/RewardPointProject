@@ -141,7 +141,6 @@ class RewardPointInterface(BaseRewardPointInterface):
                        "inner hash join openquery(NC,'select name,code from bd_psndoc where enablestate =2') as NCDB on NCDB.CODE = dt.JobId " \
                        "where dt.DataStatus=0 and a.DataStatus=0"
             res_df = read_sql(sql=base_sql, con=mssql_con)
-        print(res_df)
         return totalLength, res_df
 
     def _base_query_RewardPointSummary(self, dict data_in) -> (int, DataFrame):
