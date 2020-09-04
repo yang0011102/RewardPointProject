@@ -12,7 +12,9 @@ check_dateType_rewardPointDetail = ["beginDate", "endDate"]  # 时间检查项
 
 # 导入积分明细
 pre_import_rewardPoint = {"Operator": str}
-import_rewardPoint_columncheck = ['工号', '一级部门', '二级部门', '三级部门', '职务名称', 'A分/B分', '加分', '减分', '职能部门/所在部门管理', '提交部门',
+import_rewardPoint_columncheck = ['工号', '一级部门',
+                                  # '二级部门', '三级部门',
+                                  '职务名称', 'A分/B分', '加分', '减分', '职能部门/所在部门管理', '提交部门',
                                   '考核日期', ]
 filetype_rewardPoint = ['.xlsx', '.xls']  # 文件类型检查项
 file_dateType_rewardPoint = {'date_column': ['考核日期'],
