@@ -1,4 +1,4 @@
-#/bin/bash/
+#!/bin/bash/
 python /home/yy/Project/RewardPoint/setup.py build_ext --inplace;
 find /home/yy/Project/RewardPoint/src -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
 find /home/yy/Project/RewardPoint/InterfaceModules -maxdepth 1 -name '*.c' -type f -exec rm -rf {} \;
