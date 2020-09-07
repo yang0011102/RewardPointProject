@@ -1,0 +1,11 @@
+[Unit]
+Description=gunicorn
+After=startNginx.service
+
+[Service]
+Type=forking
+ExecStart=home/yy/anaconda3/envs/py37/bin/gunicorn -c /home/yy/Project/RewardPoint/gunicorn_config.py app:app
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
