@@ -9,9 +9,11 @@ from InterfaceModules.activity import ActivityInterface
 from InterfaceModules.upload import UploadInterface
 from InterfaceModules.shoppingCart import ShoppingCartInterface
 from InterfaceModules.order import OrderInterface
+from InterfaceModules.chart import ChartInterface
 from config import *
 from pre_check import *
 from tool import *
+from tool import df_tolist
 from pandas import read_excel, Timestamp
 
 worker = RewardPointInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
@@ -19,6 +21,7 @@ uploadWorker = UploadInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 activityWorker = ActivityInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 shoppingCartWorker = ShoppingCartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 orderWorker = OrderInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
+chartWorker = ChartInterface(mssqlDbInfo=mssqldb, ncDbInfo=ncdb)
 
 def dispatcher(str selector, dict data, files=None):
     '''
@@ -442,6 +445,38 @@ def dispatcher(str selector, dict data, files=None):
                          }
         return _response
 
+    def count_summary() -> dict:
+        res = chartWorker.count_summary(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": res
+                     }
+        return _response
+
+    def tendency_data() -> dict:
+        res = chartWorker.tendency_data(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": res
+                     }
+        return _response
+
+    def func_reason_data() -> dict:
+        res = chartWorker.func_reason_data(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": res
+                     }
+        return _response
+
+    def ranking() -> dict:
+        res = chartWorker.ranking(data_in=data)
+        _response = {"code": 0,
+                     "msg": "",
+                     "data": res
+                     }
+        return _response
+
     cdef dict switch = {"query_rewardPoint": query_rewardPoint, "import_rewardPoint": import_rewardPoint,
                         "delete_rewardPoint": delete_rewardPoint, "export_rewardPoint": export_rewardPoint,
                         "account_rewardPoint": account_rewardPoint,
@@ -458,6 +493,7 @@ def dispatcher(str selector, dict data, files=None):
                         "upload_goodsImage": upload_goodsImage,
                         "query_orderDetail": query_orderDetail, "query_FixedPoints": query_FixedPoints,
                         "export_FixedPoints": export_FixedPoints, "query_FixedPoints_ByYear": query_FixedPoints_ByYear,
+                        "count_summary":count_summary,"tendency_data":tendency_data,"func_reason_data":func_reason_data,"ranking":ranking,
                         "delete_cart": delete_cart}
     if switch.get(selector):
         return switch.get(selector)()
